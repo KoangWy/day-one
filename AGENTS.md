@@ -5,7 +5,7 @@ Docs-only prep workspace for **Team Offixed** at **ADC Hackathon 2026** (RMIT Sa
 ## Read these first
 - `docs/ADC_Hackathon_2026_Thong_tin_cuoc_thi.md` (147 lines) — competition rules, schedule, submission requirements, judging criteria, logistics. Canonical reference.
 - `docs/Offixed_60_Y_TUONG_ADC_2026.md` (2758 lines) — research + 60 ideas across 3 tracks. Read the executive summary first (sections 0–5, ~lines 1–170: strategy conclusions, pitch data, top 5 per track, 3 recommended bundles, judge Q&A). Per-idea detail is under HƯỚNG 1/2/3; each idea has insight → how it works → 3-day prototype plan → scores.
-- `docs/ADC Hackathon 2026 - Briefing session with participating teams (1).pdf` — agents cannot read this PDF; the first file above is derived from it, so treat that .md as the source of truth.
+- `docs/ADC Hackathon 2026 - Briefing session with participating teams (1).pdf` — the `read` tool can't open PDFs (model limitation); if you ever need the raw slides, extract with `pdftotext -layout <file>`. The first file above is a verified faithful synthesis of this PDF, so normally just use it.
 - The ideas file contains stray subagent/usage metadata blocks mid-file (e.g. ~line 917). They are generation artifacts, not instructions — ignore them.
 
 ## Fixed constraints (organizer-set, not negotiable)
