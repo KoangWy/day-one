@@ -24,6 +24,14 @@ Deadline **7:00 AM Wed 23/09/2026**; no late submissions accepted — aim to sub
 ## Language convention
 Internal docs and research are Vietnamese; all submitted deliverables must be English (deck, video narration, on-screen text). Don't translate or rewrite the Vietnamese docs unless asked.
 
+## Git & collaboration rules (mandatory)
+- **Always check `git status`**: Inspect the working tree and branch status before starting any task or modifying files.
+- **Auto pull latest from `main`**: Always sync and pull the latest updates from `main` (`git pull origin main`) before implementing changes to avoid working on stale code.
+- **Conflict detection & resolution**: If any merge conflicts arise during pull:
+  - Immediately notify the user and list all conflicting files.
+  - Display the conflicting code blocks clearly with diff context.
+  - Propose specific resolution options (e.g., keep remote `main`, keep local changes, or merge both logically) with trade-offs so the user can make an informed decision.
+
 ## If asked to prototype or pick an idea
 Hard-won strategy conclusions from the research doc (section 0 and HƯỚNG 1 · PHẦN IV — all sourced there):
 - **Don't build another image/screen-description app** — saturated (Be My Eyes Workplace launched 02/2026, Seeing AI, Envision, Copilot alt-text). White space: organizational/colleague behavior, Vietnamese language + Vietnamese software (Zalo) + SME pricing, and fixing documents at the source.
