@@ -5,7 +5,7 @@ if [[ $# -ne 1 ]]; then
   exit 2
 fi
 if ! command -v mkcert >/dev/null; then
-  echo 'Install mkcert first: brew install mkcert' >&2
+  echo 'Install mkcert first: brew install mkcert (macOS) or winget install FiloSottile.mkcert (Windows)' >&2
   exit 1
 fi
 task_root="$(cd "$(dirname "$0")/.." && pwd)"

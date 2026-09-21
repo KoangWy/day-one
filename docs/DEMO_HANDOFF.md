@@ -25,6 +25,15 @@ uv run python -m navigation.prepare ../../data/examples/lift-lobby-to-toilet-v1 
   --reviewer "Team Offixed" --reviewed
 ```
 
+Pre-demo self-check on the laptop (real server + real build + published route and MP3s, VLM mocked, axe at every phase; Chromium passed on 21/09):
+
+```bash
+cd apps/web
+npm run test:real
+```
+
+Windows laptop: install uv with `py -m pip install --user uv`, run commands from Git Bash, and use `uv run --project apps/server python ...` wherever a step says `python3`.
+
 Teach/HTTPS/device details: `docs/PROTOTYPE_RUNBOOK.md`. Test results + limits: `docs/PROTOTYPE_VERIFICATION.md`.
 
 ## 2. On-site field test (finish before the 15:00 22/09 freeze)
@@ -37,6 +46,7 @@ Teach/HTTPS/device details: `docs/PROTOTYPE_RUNBOOK.md`. Test results + limits: 
 
 ```bash
 python3 scripts/metrics.py session1.json session2.json session3.json
+# Windows: uv run --project apps/server python scripts/metrics.py session1.json session2.json session3.json
 ```
 
 - [ ] Real-VLM evaluation with a local manifest (3 fresh images per landmark, 10 negatives, true/false origin; never commit real images):

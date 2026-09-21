@@ -1,6 +1,6 @@
 # Prototype verification — test results and known limits
 
-Internal note. Updated after the 21/09/2026 implementation session. Only records what was actually run; anything not done is marked NOT DONE.
+Internal note. Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE.
 
 Locked demo route: **Lift lobby → Toilet, 2 checkpoints** (`lift-lobby-to-toilet-v1`). Approved exception to the Tier A spec's 4–5 text-sign requirement (`docs/brainstorm/specs/2026-09-21-unified-day1-nav-design.md:18-24`): accepts both text signs and wheelchair pictograms plus physical features. The `route.json` schema is unchanged.
 
@@ -17,6 +17,29 @@ Locked demo route: **Lift lobby → Toilet, 2 checkpoints** (`lift-lobby-to-toil
 Backend coverage (read from `apps/server/tests/`): `route.json` matches the schema in `apps/server/navigation/models.py:25-33`, origin never returns a movement instruction (`test_api.py:35-41`), insufficient evidence (wrong text/blurry/contradictory/generic) is always `matched=false` (`test_api.py:44-56`), bad requests return 404/422/503 without echoing base64 (`test_api.py:59-94`), no replay image storage (`test_api.py:17-31`), `/ingest-video` blocks non-loopback + cross-origin before parsing (`test_api.py:97-102`), atomic publish — a TTS failure never exposes a half-published route (`test_teach.py`), pictograms require every `required_features` entry (`test_provider.py`), the OpenCode adapter uses strict schema with no silent retries (`test_provider.py`).
 
 Frontend coverage (`apps/web/e2e/replay.spec.ts`, 7 tests, mock API + synthetic camera): origin needs ≥2 matches out of 3 photos, no Next at origin; fallback only after 2 consecutive misses; Repeat never calls the VLM; override needs a separate Yes and counts a manual override; Stop/background/reload reset to origin; a failed face model blocks all uploads; axe `wcag2a/wcag2aa/wcag21aa/wcag22aa` reports no serious/critical violations **on the mock**. E2E runs the real MediaPipe/WASM build but with a fake camera/API — **it says nothing about landmark accuracy**.
+
+## 1b. Re-run on the Windows laptop (21/09/2026 evening, `main` @ `a28c46b` + fixes below)
+
+Environment: Windows 11, Git Bash, Node 24.19, npm 11.17, uv 0.12.17 (Python 3.11 managed by uv), Playwright Chrome for Testing 153 + WebKit 26.6. No FFmpeg, no mkcert, no VLM key on this laptop.
+
+| Check | Command | Actual result |
+|---|---|---|
+| Backend | `uv run pytest -q` | **35 passed** (34 existing + new UTF-8 publication regression test) |
+| Backend lint | `uv run ruff check navigation tests` | **All checks passed** |
+| Frontend state machine | `npm test` | **8 passed** |
+| Frontend build | `npm run build` | **pass**, PWA `generateSW`, 11 precache entries (384.82 KiB) |
+| Mock E2E | `npm run test:e2e` | Chromium **7/7 passed**. WebKit **2 passed, 5 skipped**: Playwright's Windows WebKit has no `MediaStream`/`getUserMedia`, so camera journeys skip with a stated reason instead of faking capture |
+| Real build E2E (new) | `npm run test:real` | Chromium **2/2 passed**; WebKit **1 passed, 1 skipped** (idle-screen axe passed before the camera skip). Real FastAPI + real `dist` + published route + real MP3s; **only `/replay` mocked** |
+| Route publish | `uv run python -m navigation.prepare ../../data/examples/lift-lobby-to-toilet-v1 --reviewer "Team Offixed" --reviewed` | Published in ~8 s, `sample=False`, 11 MP3 (512,928 bytes), `route.json` identical to the reviewed example |
+| Serve smoke | `bash scripts/serve.sh` | `/health` ok (`vlm_configured=false`), `/` 200, local face model 200, `/replay` without key → **503** (not a mismatch) |
+| Metrics | `uv run --project apps/server python scripts/metrics.py <session.json>` | Summarises a synthetic field session correctly (sample/field split) |
+
+What `test:real` proves on Chromium: every prebuilt MP3 is served as `audio/mpeg`; `sw.js` never precaches `/audio/`, `/routes` or `privacy/`; the demo route walks origin (3 photos, all ≤640 px) → s1 confirmed → s2 two misses → fallback naming the last confirmed landmark → explicit override → "Saved route finished" with "Arrival has not been visually verified"; camera released at the end; only reviewed MP3s are fetched; mock VLM text never reaches the UI; **no serious/critical axe violations** (wcag2a/2aa/21aa/22aa) at idle, origin confirm, walking, each checkpoint confirm, fallback, override and arrival. It says nothing about landmark accuracy.
+
+Fixed in this session:
+- **Windows encoding bug**: `prepare`, `storage`, `teach`, `teach_cli`, `evaluate` and `scripts/metrics.py` read/wrote JSON with the locale default (cp1252 here). A UTF-8 `review.json` containing `’` would be published as `â€™` into UI/TTS, and a Vietnamese reviewer name crashed publish with `UnicodeEncodeError`. All text I/O is now explicit UTF-8; regression test `test_reviewed_unicode_text_survives_publication_on_any_locale`.
+- E2E camera journeys skip with a reason on browsers without `MediaStream` instead of failing with `canvas.captureStream is not a function`.
+- `scripts/setup_https.sh` install hint now covers Windows (`winget install FiloSottile.mkcert`).
 
 ## 2. Published route (read from `data/runtime/routes/lift-lobby-to-toilet-v1/`)
 
@@ -39,11 +62,16 @@ Real-VLM evaluation is **NOT DONE**: use `apps/server/navigation/evaluate.py:14-
 - Unreviewed leftover draft: `data/runtime/drafts/lift-lobby-vlm-draft/` (VLM-generated route, non-conforming step IDs, unverified `voice_cue` quotes) — never publish, never demo. Delete or re-review before the freeze.
 - Media/keys/runtime are local-only data, ignored by Git (`.gitignore`): `.env`, `*.pem/key/crt`, `*.mp3/wav/mp4/mov`, `data/runtime/`, `data/models/`, `apps/web/public/privacy/`, `.certs/`. Source videos in `data/runtime/source-media/` (~147 MB MOV) are never committed.
 
-## 5. NOT DONE (needed before the 15:00 22/09 freeze)
+## 5. Status of the pre-freeze checklist (needed before the 15:00 22/09 freeze)
 
-- [ ] `npm run test:e2e` on Chromium + WebKit (requires `npx playwright install chromium webkit`).
-- [ ] Real-VLM evaluation with false-positive/latency numbers.
-- [ ] At least 3 full walks plus `python3 scripts/metrics.py` over session metrics with sample/field split (`scripts/metrics.py:8-30`).
-- [ ] Real NVDA on Windows + VoiceOver/Safari on a real iPhone (screen recording with audio); axe on the real build.
-- [ ] Same-LAN HTTPS test (`scripts/setup_https.sh` + `scripts/serve.sh --https`) whenever the laptop IP changes.
-- [ ] Commit the currently untracked prototype (`apps/`, `data/examples/`, `scripts/`, `README.md`, `docs/PROTOTYPE_RUNBOOK.md`, `.env.example`, `.gitignore`) — still only in the working tree.
+Done:
+- [x] `npm run test:e2e` on Chromium + WebKit — §1b (Chromium full; WebKit camera journeys skipped on Windows).
+- [x] axe on the real build — §1b, Chromium, with VLM mocked.
+- [x] Prototype committed — `6d67ad8` on `main`.
+
+Still NOT DONE (need hardware, people, a key or a Mac — cannot be done from code):
+- [ ] The 5 WebKit camera journeys on macOS or Linux (`npm run test:e2e` + `npm run test:real`): Windows WebKit has no `MediaStream`.
+- [ ] Real-VLM evaluation with false-positive/latency numbers — this Windows laptop has no key (`/health` → `vlm_configured=false`); add `GEMINI_API_KEY` to `.env` and run `navigation.evaluate` with a local manifest.
+- [ ] At least 3 full walks plus `scripts/metrics.py` over session metrics with sample/field split (`scripts/metrics.py:8-30`).
+- [ ] Real NVDA on Windows + VoiceOver/Safari on a real iPhone (screen recording with audio). Automated axe does not replace these.
+- [ ] Same-LAN HTTPS test (`scripts/setup_https.sh` + `scripts/serve.sh --https`) whenever the laptop IP changes — mkcert is not installed on the Windows laptop yet; allow Python through the firewall for Private networks only.
