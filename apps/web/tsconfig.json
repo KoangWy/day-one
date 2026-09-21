@@ -6,5 +6,5 @@
     "esModuleInterop": true, "allowImportingTsExtensions": true,
     "types": ["vite/client", "vite-plugin-pwa/client", "node"]
   },
-  "include": ["src", "vite.config.ts", "playwright.config.ts", "e2e"]
+  "include": ["src", "vite.config.ts", "playwright.config.ts", "playwright.real.config.ts", "e2e", "e2e-real"]
 }

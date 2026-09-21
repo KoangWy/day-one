@@ -48,6 +48,11 @@ async function setup(page: Page, outcomes: (boolean | 'error')[] = []) {
 }
 
 async function start(page: Page) {
+  // Playwright's Windows WebKit build has no MediaStream, so no synthetic camera can exist there.
+  // Camera journeys still run on Chromium and on macOS/Linux WebKit; never fake the capture path.
+  const camera = await page.evaluate(() => typeof MediaStream === 'function'
+    && typeof HTMLCanvasElement.prototype.captureStream === 'function')
+  test.skip(!camera, 'Browser build lacks MediaStream/canvas.captureStream; run camera journeys on Chromium or macOS/Linux WebKit')
   await page.getByLabel('I agree to send these photos').check()
   await page.getByRole('button', { name: 'Start this walk' }).click()
   await expect(page.getByRole('button', { name: 'Check starting point' })).toBeVisible()
