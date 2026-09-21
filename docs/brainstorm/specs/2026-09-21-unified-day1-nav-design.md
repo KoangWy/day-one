@@ -1,128 +1,107 @@
-# Unified Day-1 Navigation — Design Spec (Teach-and-Replay + Lobby Guidance)
+# Unified Day-1 Navigation — Design Spec (TRIMMED Tier A MVP)
 
-- Date: 2026-09-21
+- Date: 2026-09-21 (trimmed 2026-09-21, team vote: Tier A)
 - Branches merged: `huy-s-brainstorm` (RouteCoach Replay) + `brainstorm/khoa` (Lobby Navigation)
 - Extra input: Clew open-source review (ideas only, no copied code)
-- Status: draft for team vote before implementation plan
+- Status: LOCKED for implementation planning — Tier A minimal; everything else is Future Work
 - Language: all deliverables/demo in English
 - Competition: ADC Hackathon 2026, Team Offixed, Visual Impairment, AI & Employability
 
-## 1. One-sentence product
+## 1. One-sentence product (trimmed)
 
-A newly hired blind employee is guided once, the team keeps the memory, and the
-employee replays it alone: entrance → elevator (crowded lobby) + office → toilet
-→ elevator (daily routes). One guided walk becomes a replayable place graph.
-Zero infrastructure: no beacons, no QR, no LiDAR scan team.
+A newly hired blind employee's single guided walk on one linear route
+(office → toilet, 4-5 text-rich landmarks) becomes replayable step-by-step
+guidance with origin check and checkpoints. Zero infrastructure.
 
 Pitch line: "They narrate what they see. We remember where you work."
 
-## 2. What we keep from each brainstorm
+## 2. Tier A scope — what is IN
 
-### From Huy (route memory)
-- Natural guided walk as the only mapping step: user says "remember this route",
-  agent records guide voice + ~1fps keyframes, LLM segments into legs.
-- Memory = place graph (nodes: office/toilet/elevator/lobby; edges: step lists),
-  each step = `{instruction, landmark, voice_cue, clip_vector, keyframe_ref}`.
-- Replay = origin verification first ("Are you in the office? I see desks."),
-  then one step at a time with checkpoint confirmations; advance only on "yes".
-- Hybrid architecture: PWA ↔ laptop relay ↔ cloud (Teach batch + Replay
-  streaming multimodal). Offline mp4 ingest via the same pipeline for stage
-  reliability (downsample 1fps + dedup cosine > 0.95).
+- ONE linear route, 4-5 landmarks with visible text signs, English only.
+- Teach: offline ingest of a pre-recorded mp4 (downsample ~1fps, manual cleanup
+  allowed) → `route.json` with `{instruction, landmark, voice_cue}` per step.
+  Same schema as the live pipeline; live teach shown only as a 20s log recap.
+- Replay: request/response VLM (no streaming realtime) + stored steps + Edge-TTS
+  audio files. Flow: origin check → step 1 → checkpoint "yes" → step 2 … → arrival.
+- PWA: camera snapshot button, mic/voice command (or typed fallback), audio
+  playback, Next/Yes buttons, full keyboard operability.
+- Server (FastAPI, laptop): `/ingest-video`, `/routes`, `/replay` (stateless per
+  step: given current frame + step index → localize + next instruction).
+- Demo video: split screen (walk footage with subtitles + route progress
+  "Step 2/5"), <5 min, MP4/MOV 16:9.
+- Accessibility: keyboard-only pass + real NVDA run recorded; "WCAG 2.2 AA /
+  ISO/IEC 40500:2025" on slide.
+- Deck: differentiator table (GoodMaps/Clew/Be My Eyes), metrics (teach time,
+  replay success, p50 latency), safety disclaimer, Clew inspiration credit.
 
-### From Khoa (lobby guidance)
-- The hard problem is the open lobby: no walls to trail, crowds force detours,
-  then heading is lost. Fixed obstacles: columns, reception desk, planters, ads.
-- Per-frame runtime in the lobby segment: landmark match (template + OCR on
-  signs) + YOLO people + monocular depth for columns/walls → 3 zones
-  (left/middle/right) → steer toward next landmark via the free zone.
-- Short instructions + vibration ("Clear, go straight." / "Person ahead, shift
-  right." / "Column ahead, go left." / "Stop."), cane remains primary safety.
-- "I'm lost" fallback: repeat last confirmed landmark + message a registered buddy.
-- Demo craft: 2 videos (empty-hall map scan + daily walk with people/column),
-  split screen (annotated video with boxes/arrows + route dot "you are here" +
-  "Landmark 2/4"). Honest framing: simulated on recorded video, real-time on
-  phone is vision.
+## 3. Explicitly OUT (Future Work slide only)
 
-### From Clew (occamLab/Clew, ideas only — no code copied, no LICENSE found)
-- Record-with-guide-first, save/share routes (`.crd` → our `route.json`).
-- Compress paths into keypoints at turns/stairs (3-5 per leg).
-- Physical anchor at start (hold phone to door frame) to solve origin check.
-- Non-speech audio: steady click = on path, silence = off path, whistle = turn.
-- Safety framing: cane/dog primary, app gives reverse-route info only.
-- Credit line for deck/README: "Route teach-and-share inspired by OCCAM Lab
-  Clew (github.com/occamLab/Clew); original implementation by Team Offixed."
+- Realtime YOLO + depth obstacle steering every frame → replaced by honest
+  caption: no avoidance in MVP. (Single YOLO snapshot MAY be added only if a
+  member finishes early — not in plan.)
+- CLIP/SigLIP vector search → replaced by VLM caption match against stored
+  landmark text, with manual Next-step fallback for stage reliability.
+- Streaming realtime APIs (Gemini Live / GPT-4o Realtime) → plain request/response.
+- Place graph + pathfinding multi-route → one linear route; graph diagram stays
+  in deck as vision.
+- Vibration, buddy ping/notify, barometer floor detection, background run,
+  Vietnamese voice, live on-stage teach — all cut.
 
-## 3. Unified architecture (3-day MVP)
+## 4. Data contracts (frozen for plan)
 
-```
-Phone PWA (camera + mic, 640px, ~1fps, chest-mounted, big accessible buttons)
-  ↕ WebSocket
-Laptop server FastAPI (/teach, /ingest-video, /replay, /routes)
-  + face-blur + CLIP/SigLIP vectors (sqlite-vec) + state machine
-  ↕ Cloud
-  Teach (batch): Whisper + VLM caption + LLM segment/summarize
-  Replay: vector shortlist → VLM confirm → streaming TTS (Gemini Live or GPT-4o Realtime)
-  Lobby segment only: YOLO-nano people + MiDaS/Depth-Anything near-field check
+```json
+{
+  "route_id": "office-to-toilet-v1",
+  "steps": [
+    {"id": "s1", "instruction": "Go straight past the pantry",
+     "landmark": "pantry counter on left",
+     "voice_cue": "guide said: cold air from AC here"}
+  ]
+}
 ```
 
-- Phone never calls cloud directly (privacy, logging).
-- Corridor/office segments: Huy flow (localize 1-2s, read stored steps).
-- Lobby segment: Khoa flow (continuous steer with 3-zone free-space check).
-- MVP route (single, seed prebuilt): entrance → reception → column → elevator →
-  office → toilet (5-7 landmarks, favor signs with text).
+Replay request: `{route_id, step_index, image_jpeg_640}`.
+Replay response: `{matched: true/false, instruction, checkpoint_question, audio_url}`.
+Fallback: if `matched=false` twice → "I lost track, slowly turn left or right.
+Last confirmed: <landmark>." + on-screen Next/Repeat buttons.
 
-## 4. Memory + guidance flows
+## 5. Origin check (mandatory, kept from full spec)
 
-### Teach (any colleague, once)
-1. "Remember this route, entrance to office." Record voice + video.
-2. Server builds legs → steps with voice cues quoted from the guide
-   (AI never claims to feel anything itself).
-3. Human reviews/edits steps (Khoa approval gate). Agent reads back summary.
-4. Graph merges by place name + image similarity; corridor and lobby legs share nodes.
+Before any guidance: capture 2-3 frames → VLM confirms top landmark → ask
+"Are you in the office right now? I see desks behind you." Yes → start at s1.
+No/unsure → ask location or refuse ("I only know the office route").
 
-### Replay (blind employee, daily)
-1. "Take me to the toilet." Capture 2-3 frames → localize → origin question.
-   Wrong origin → disambiguate or refuse instead of misguiding.
-2. Lobby legs: continuous short steering + vibration.
-   Corridor legs: stepwise + checkpoint (one machine-seen landmark + one quoted
-   guide cue per step).
-3. Lost (no match for N seconds): "I lost track, slowly turn left or right."
-   Button: last landmark + buddy ping.
-4. Arrival states name the next useful link ("Elevator is opposite, left side.").
+## 6. Checkpoints (kept, simplified)
 
-## 5. Privacy, safety, honesty (judge-proofing)
-- Keyframes only during active sessions (~1fps), face-blur pre-upload, store
-  captions/transcripts/vectors only, explicit consent + retention in deck.
-- "Wayfinding aid, not a safety device." No full-automation promise (EMNLP 2026
-  52.5% reference). No blindfold empathy demo. Prototype keyboard + NVDA/TalkBack
-  pass, "WCAG 2.2 AA / ISO/IEC 40500:2025" on slide.
+Each step = one machine-checkable visual ("I see glass doors on your right —
+past the pantry?") + optionally one quoted guide cue. Advance only on "yes"
+(voice or button). AI never claims to sense non-visual things itself.
 
-## 6. Demo script (<5 min, MP4/MOV, 16:9, English speech + subtitles)
-1. 0:00-0:30 problem (94% unemployment VN, 3-6 months to learn a route).
-2. 0:30-1:00 teach recap (pre-ingested) + 20s live mini-teach proof.
-3. 1:00-3:30 replay: lobby detour around a person (boxes/arrows) + corridor
-   checkpoints with origin check (split screen + progress).
-4. 3:30-4:30 differentiators (GoodMaps/Clew/Be My Eyes table; company-owns-the-map).
-5. 4:30-5:00 metrics + disclaimer + ask (teach time, replay success, p50 latency).
+## 7. Privacy / safety / honesty (kept)
 
-## 7. Metrics for deck
-Teach processing time per minute of walk; replay success (correct checkpoints /
-total); replay p50 turn latency; disambiguation rate; landmarks count.
+- Keyframes only during sessions (~1fps), face-blur pre-upload, no raw video
+  retention, consent + retention line in deck.
+- "Wayfinding aid, not a safety device." No full-automation claim (EMNLP 2026
+  52.5%). No blindfold demo. Cane primary.
+- Credit: "Route teach-and-share inspired by OCCAM Lab Clew
+  (github.com/occamLab/Clew); original implementation by Team Offixed."
 
-## 8. Risks and cut lines
-- Landmark mismatch (lighting/crowd) → 3-5 text-rich landmarks, same-lighting
-  capture; cut to timed-dot simulation keeping YOLO overlay if matcher slips.
-- Depth false positives → center-bottom ROI + conservative near threshold.
-- Corridor aliasing → never trust embedding alone; VLM + user confirm required.
-- Scope creep → YOLO only in lobby; background-run, AprilTags, BlindSquare
-  integration = Future Work slide.
+## 8. Demo script (<5 min)
 
-## 9. Open decisions for planning
-Cloud pick (Gemini Live vs GPT-4o Realtime: keys/budget?), CLIP vs SigLIP,
-filmable venue/floor, YOLO in MVP or lobby-only, Sao Mai user clip (Tan Phu,
-~40 min from RMIT; 400+ NVDA users) — yes/no.
+1. 0:00-0:30 problem (94% unemployment VN, months to learn a route).
+2. 0:30-1:00 teach recap (pre-ingested + log, no live risk).
+3. 1:00-3:30 replay with origin check + 3-4 checkpoints + arrival.
+4. 3:30-4:30 differentiators + honest-simulation note.
+5. 4:30-5:00 metrics + disclaimer + ask.
+
+## 9. Work split hint (3 people, for planning)
+
+- PWA shell + accessible UI + audio playback.
+- Server + ingest script + route.json seed.
+- Replay endpoint + VLM prompts + video/deck assembly.
 
 ## 10. Self-review
-Single-route MVP feasible; teach vs replay ownership clear; no TBD; graph covers
-multi-leg requirement; checkpoints fixed to quote-guide pattern; origin check
-mandatory; Clew credited without copying code.
+
+Single linear route, no TBD, no streaming/CLIP/YOLO dependency in the critical
+path; every guidance turn has a stored-text fallback; scope fits 2 builders ×
+2 days with 1 day buffer for video/deck.
