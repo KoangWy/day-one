@@ -15,7 +15,7 @@ async def main():
     parser.add_argument("--route-id", required=True)
     parser.add_argument("--transcript", type=Path)
     args = parser.parse_args()
-    transcript = args.transcript.read_text() if args.transcript else None
+    transcript = args.transcript.read_text(encoding="utf-8") if args.transcript else None
     with args.video.open("rb") as source:
         upload = UploadFile(filename=args.video.name, file=source)
         route = await ingest_upload(upload, args.route_id, transcript, DATA, configured_provider())

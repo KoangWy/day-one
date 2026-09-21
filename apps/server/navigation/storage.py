@@ -12,7 +12,7 @@ class Store:
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", route_id):
             raise FileNotFoundError
         return Published.model_validate_json(
-            (self.root / "routes" / route_id / "published.json").read_text()
+            (self.root / "routes" / route_id / "published.json").read_text(encoding="utf-8")
         )
 
     def list(self):

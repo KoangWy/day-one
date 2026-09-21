@@ -194,17 +194,17 @@ async def ingest_upload(upload, route_id, transcript, data, provider):
     with tempfile.TemporaryDirectory(dir=destination.parent, prefix=".draft-") as staging:
         stage = Path(staging) / "bundle"
         stage.mkdir()
-        (stage / "route.json").write_text(route.model_dump_json(indent=2))
-        (stage / "transcript.json").write_text(json.dumps(segments, indent=2))
+        (stage / "route.json").write_text(route.model_dump_json(indent=2), encoding="utf-8")
+        (stage / "transcript.json").write_text(json.dumps(segments, indent=2), encoding="utf-8")
         (stage / "teach-log.json").write_text(json.dumps({
             "started_at": started_at, "pre_recorded": True, "events": events,
-        }, indent=2))
+        }, indent=2), encoding="utf-8")
         (stage / "review.json").write_text(json.dumps({
             "origin": {"description": "", "required_text": [], "question": ""},
             "checkpoints": [{"description": s.landmark, "required_text": [],
                              "question": ""} for s in route.steps],
             "arrival": "You have reached the outside of the toilet. Route finished.",
             "destination_is_exterior": False, "sample": False,
-        }, indent=2))
+        }, indent=2), encoding="utf-8")
         stage.rename(destination)
     return route

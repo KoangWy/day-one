@@ -6,6 +6,8 @@ Tài liệu nội bộ. UI, chỉ đường và audio đều bằng tiếng Anh.
 
 Cần Node 22+, `uv`, Python 3.11 do uv quản lý, FFmpeg. Cài `uv sync --all-extras --frozen` trong `apps/server`, `npm ci` trong `apps/web`; chạy `scripts/setup_assets.py` bằng môi trường server rồi build frontend. Dependency được pin trong `uv.lock` và `package-lock.json`.
 
+**Laptop Windows** (đã chạy thử 21/09/2026, Git Bash): cài uv bằng `py -m pip install --user uv` rồi thêm `%APPDATA%\Python\Python313\Scripts` vào PATH (hoặc `winget install astral-sh.uv`). `python3` trên Windows thường là alias Microsoft Store — gọi script Python bằng `uv run --project apps/server python ...`. npm 11+ chặn `postinstall` của esbuild; không cần duyệt vì binary `@esbuild/win32-x64` vẫn chạy. Mọi file JSON/transcript được đọc/ghi UTF-8 tường minh nên review có dấu `’`/tiếng Việt không bị lỗi trên locale cp1252. FFmpeg chỉ cần cho teach: `winget install Gyan.FFmpeg`.
+
 Sao chép `.env.example` thành `.env` nếu chưa có. Không ghi đè `.env` hiện hữu. Không paste key vào frontend hoặc lệnh curl có thể bị lưu trong history.
 
 ```dotenv
@@ -33,10 +35,12 @@ Server phục vụ bản build, API và audio cùng origin ở `http://127.0.0.1
 ## HTTPS cho iPhone/Windows cùng LAN
 
 ```bash
-brew install mkcert
+brew install mkcert                 # macOS; Windows: winget install FiloSottile.mkcert
 bash scripts/setup_https.sh 192.168.0.143  # thay bằng IP LAN hiện tại của laptop
 bash scripts/serve.sh --https
 ```
+
+Laptop Windows: lần đầu chạy `--https`, Windows Defender Firewall hỏi cho phép Python — chỉ chọn **Private networks**, người dùng tự bấm. Không thì iPhone/máy NVDA không kết nối được cổng 8443.
 
 Server HTTPS ở `https://<IP-LAN>:8443`. Script tạo chứng chỉ nhưng không tự thay đổi trust store. Xem thư mục CA bằng `mkcert -CAROOT`.
 
@@ -118,10 +122,20 @@ npx playwright install chromium webkit
 npm run test:e2e
 ```
 
-E2E dùng camera tổng hợp + API mock, chạy MediaPipe/WASM thật. Không đại diện độ chính xác landmark. Download session metrics trên UI, rồi:
+E2E dùng camera tổng hợp + API mock, chạy MediaPipe/WASM thật. Không đại diện độ chính xác landmark. WebKit của Playwright **trên Windows** không có `MediaStream`, nên 5 hành trình cần camera tự skip (có ghi lý do); chạy trên macOS/Linux để có WebKit đầy đủ.
+
+Kiểm tra **bản build thật** (server FastAPI thật, `dist` thật, route đã publish và MP3 Edge-TTS thật; chỉ `/replay` được mock nên không cần key): cần `npm run build` và route `lift-lobby-to-toilet-v1` đã publish. Lệnh tự khởi động uvicorn ở cổng 8000 hoặc dùng lại server đang chạy. Kiểm tra mọi MP3, service worker không cache audio/API/model, đi origin → checkpoint → fallback → override → arrival và chạy axe ở từng phase. Đổi route bằng `DEMO_ROUTE_ID=<route-id>`.
+
+```bash
+cd apps/web
+npm run test:real
+```
+
+Download session metrics trên UI, rồi:
 
 ```bash
 python3 scripts/metrics.py session1.json session2.json session3.json
+# Windows: uv run --project apps/server python scripts/metrics.py session1.json ...
 ```
 
 Đánh giá VLM thật dùng manifest local với các case `id`, `image`, `expected` và `checkpoint` theo schema metadata; tối thiểu ba ảnh mới mỗi landmark, mười ảnh âm tính và origin đúng/sai. `image` là đường dẫn tương đối từ manifest. Không commit ảnh thật.
