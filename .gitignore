@@ -11,3 +11,31 @@
 # Competition brief image assets
 docs/competition brief/
 *.HEIC
+
+# Prototype: secrets, local media, generated assets and runtime state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.pptx
+*.mp4
+*.mov
+*.wav
+*.mp3
+node_modules/
+dist/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+test-results/
+playwright-report/
+coverage/
+data/runtime/
+data/models/
+apps/web/public/privacy/
+.certs/
+*.tsbuildinfo

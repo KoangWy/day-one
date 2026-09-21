@@ -1,0 +1,9 @@
+{
+  "route_id": "office-to-toilet-sample",
+  "steps": [
+    {"id": "s1", "instruction": "Leave the office and follow the corridor to the PANTRY sign.", "landmark": "PANTRY sign above the counter on the left", "voice_cue": ""},
+    {"id": "s2", "instruction": "Continue along the corridor to the MEETING A sign beside the glass door.", "landmark": "MEETING A sign beside the glass door", "voice_cue": ""},
+    {"id": "s3", "instruction": "Follow the corridor to the COPY ROOM sign on the right.", "landmark": "COPY ROOM sign on the right-hand door", "voice_cue": ""},
+    {"id": "s4", "instruction": "Continue to the TOILETS sign. Stop outside the toilet entrance.", "landmark": "TOILETS sign above the exterior toilet entrance", "voice_cue": ""}
+  ]
+}

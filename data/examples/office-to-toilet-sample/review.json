@@ -1,0 +1,12 @@
+{
+  "origin": {"description": "OFFICE sign beside the office entrance", "required_text": ["OFFICE"], "question": "The OFFICE sign appears to match. Are you at the office entrance?"},
+  "checkpoints": [
+    {"description": "PANTRY sign above the counter on the left", "required_text": ["PANTRY"], "question": "Are you at the pantry counter beneath the PANTRY sign?"},
+    {"description": "MEETING A sign beside the glass door", "required_text": ["MEETING A"], "question": "Are you at the glass door marked MEETING A?"},
+    {"description": "COPY ROOM sign on the right-hand door", "required_text": ["COPY ROOM"], "question": "Are you at the door marked COPY ROOM?"},
+    {"description": "TOILETS sign above the exterior toilet entrance", "required_text": ["TOILETS"], "question": "Are you outside the entrance marked TOILETS?"}
+  ],
+  "arrival": "You have reached the outside of the toilet. Route finished. Camera stopped.",
+  "destination_is_exterior": true,
+  "sample": true
+}
