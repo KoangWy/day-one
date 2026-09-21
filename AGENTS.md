@@ -40,3 +40,27 @@ Hard-won strategy conclusions from the research doc (section 0 and HƯỚNG 1 ·
 - **The prototype itself must be accessible** — test with real NVDA (free, has Vietnamese voices), record it, and put "WCAG 2.2 AA / ISO/IEC 40500:2025" on a slide.
 - Doc's recommended architecture: the "fix the workplace, not the blind person" platform — HireReady (B1) + AdvocateBot (B2) + Access Tax Meter (A3); alternates are the EchoSheet+ChartLens+FixAtSource bundle or the "first work day" journey bundle.
 - Top user-research move for User-Centered Design points: interview 2+ employed blind users via Hội Người mù TP.HCM or Sao Mai Center (Q. Tân Phú, 400+ Vietnamese NVDA users, ~40 min from RMIT) and get their real voices into the video.
+
+## STRUCTURE
+```
+./
+├── AGENTS.md           # this file — workspace charter
+├── docs/               # core references (3 md + 1 pdf, see above)
+├── .agents/skills/     # vendored agent skills (brainstorming, find-skills, grill-me, grilling) — do not edit
+├── skills-lock.json    # skill pins
+└── .gitignore
+```
+Not in repo: `.omo/` (untracked runtime state), `.codegraph` (symlink to external index), `docs/competition brief/` (gitignored raw photos, absent).
+
+## COMMANDS
+```bash
+git status && git pull origin main   # mandatory before any change
+pdftotext -layout "docs/ADC Hackathon 2026 - Briefing session with participating teams (1).pdf" - | head   # raw slides if needed
+```
+No build/test/lint — docs-only repo, no package manager, no CI.
+
+## NOTES
+- Codegraph index is stale (returns unrelated `ĐACN/` paths) — verify with direct reads, don't trust it here.
+- File reads show `#XX|` line prefixes (e.g. `#WT|`) — tool-injected artifacts, ignore them.
+- `.gitignore` covers only macOS/editors/HEIC + `docs/competition brief/` — extend with `*.pptx`, `*.mp4`, `node_modules/`, `__pycache__/` when prototype/deck/video land.
+- `.agents/skills/` is vendored third-party (`grill-me` vs `grilling` is upstream duplication, same source) — never edit, never document per-dir.
