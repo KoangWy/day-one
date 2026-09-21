@@ -8,7 +8,7 @@ from pathlib import Path
 def summarize(paths):
     events = []
     for path in paths:
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         if data.get("kind") != "offixed-replay-session":
             raise ValueError(f"Not a replay session: {path.name}")
         events.extend(data["events"])

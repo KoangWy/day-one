@@ -23,8 +23,8 @@ async def synthesize(text, path):
 
 
 async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
-    route = Route.model_validate_json((bundle / "route.json").read_text())
-    review = Review.model_validate_json((bundle / "review.json").read_text())
+    route = Route.model_validate_json((bundle / "route.json").read_text(encoding="utf-8"))
+    review = Review.model_validate_json((bundle / "review.json").read_text(encoding="utf-8"))
     if len(review.checkpoints) != len(route.steps):
         raise ValueError("Each step needs one reviewed checkpoint")
     if not review.destination_is_exterior:
@@ -72,17 +72,17 @@ async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
             route=route, review=review, assets=assets, reviewer=reviewer,
             approved_at=datetime.now(timezone.utc).isoformat(),
         )
-        (stage / "route.json").write_text(route.model_dump_json(indent=2))
-        (stage / "published.json").write_text(published.model_dump_json(indent=2))
+        (stage / "route.json").write_text(route.model_dump_json(indent=2), encoding="utf-8")
+        (stage / "published.json").write_text(published.model_dump_json(indent=2), encoding="utf-8")
         log_file = bundle / "teach-log.json"
         if log_file.exists():
-            log = json.loads(log_file.read_text())
+            log = json.loads(log_file.read_text(encoding="utf-8"))
             log["approved_at"] = published.approved_at
             log["teach_seconds_including_review"] = (
                 datetime.fromisoformat(published.approved_at)
                 - datetime.fromisoformat(log["started_at"])
             ).total_seconds()
-            (stage / "teach-log.json").write_text(json.dumps(log, indent=2))
+            (stage / "teach-log.json").write_text(json.dumps(log, indent=2), encoding="utf-8")
         stage.rename(destination)  # Route becomes visible only after every MP3 is complete.
     # Keep only approved content/audio and timing log after publishing a runtime draft.
     if bundle.resolve().parent == (data / "drafts").resolve():

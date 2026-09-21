@@ -12,7 +12,7 @@ from .teach import FaceBlur
 
 
 async def evaluate(manifest: Path, output: Path):
-    cases = json.loads(manifest.read_text())
+    cases = json.loads(manifest.read_text(encoding="utf-8"))
     provider, blur = configured_provider(), FaceBlur()
     results = []
     try:
@@ -41,7 +41,7 @@ async def evaluate(manifest: Path, output: Path):
         "p50_ms": statistics.median([r["latency_ms"] for r in results]) if results else None,
         "results": results,
     }
-    output.write_text(json.dumps(summary, indent=2))
+    output.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -32,6 +32,27 @@ async def test_publication_is_atomic_and_failed_audio_never_visible(tmp_path):
     assert list((tmp_path / "routes").iterdir()) == []
 
 
+async def test_reviewed_unicode_text_survives_publication_on_any_locale(tmp_path):
+    # Reviewers save UTF-8 in their editor; Windows defaults to cp1252 without explicit encoding.
+    bundle = tmp_path / "input"
+    shutil.copytree(SAMPLE, bundle)
+    config = json.loads((bundle / "review.json").read_text(encoding="utf-8"))
+    question = "Are you at the café sign → I’m sure?"
+    config["checkpoints"][0]["question"] = question
+    (bundle / "review.json").write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
+    spoken = []
+
+    async def tts(text, path):
+        spoken.append(text)
+        path.write_bytes(b"dummy-audio" * 100)
+
+    await prepare(bundle, tmp_path, "Reviewer Nguyễn", tts)
+    published = Store(tmp_path).get("office-to-toilet-sample")
+    assert published.assets.checkpoint_questions[0] == question
+    assert published.reviewer == "Reviewer Nguyễn"
+    assert question in spoken
+
+
 async def test_publication_requires_correct_checkpoint_count_and_exterior(tmp_path):
     bundle = tmp_path / "input"
     shutil.copytree(SAMPLE, bundle)
