@@ -1,8 +1,9 @@
 # AGENTS.md
 
-Docs-only prep workspace for **Team Offixed** at **ADC Hackathon 2026** (RMIT Saigon South campus, Mon 21 – Wed 23 Sep 2026, in-person). No code, no build tooling, not a git repo. Everything lives in `docs/` and is written in **Vietnamese**.
+Docs-only prep workspace for **Team Offixed** at **ADC Hackathon 2026** (RMIT Saigon South campus, Mon 21 – Wed 23 Sep 2026, in-person). Git repo tracked on `main`. Core references live in `docs/`.
 
 ## Read these first
+- `docs/ADC_Hackathon_2026_Competition_Brief_Stages.md` — official competition brief breaking down all 6 stages of the employability lifecycle for visually impaired candidates and employees (contrasting People with Lived Experience vs. HR/Industry Perspectives, root causes, constraints, and AI hackathon angles). In English. (Raw source photos in `docs/competition brief/` are gitignored).
 - `docs/ADC_Hackathon_2026_Thong_tin_cuoc_thi.md` (147 lines) — competition rules, schedule, submission requirements, judging criteria, logistics. Canonical reference.
 - `docs/Offixed_60_Y_TUONG_ADC_2026.md` (2758 lines) — research + 60 ideas across 3 tracks. Read the executive summary first (sections 0–5, ~lines 1–170: strategy conclusions, pitch data, top 5 per track, 3 recommended bundles, judge Q&A). Per-idea detail is under HƯỚNG 1/2/3; each idea has insight → how it works → 3-day prototype plan → scores.
 - `docs/ADC Hackathon 2026 - Briefing session with participating teams (1).pdf` — the `read` tool can't open PDFs (model limitation); if you ever need the raw slides, extract with `pdftotext -layout <file>`. The first file above is a verified faithful synthesis of this PDF, so normally just use it.

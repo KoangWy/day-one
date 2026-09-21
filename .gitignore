@@ -7,3 +7,7 @@
 .vscode/
 .idea/
 *.swp
+
+# Competition brief image assets
+docs/competition brief/
+*.HEIC
