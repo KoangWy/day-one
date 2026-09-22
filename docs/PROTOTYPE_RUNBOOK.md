@@ -10,27 +10,25 @@ Cần Node 22+, `uv`, Python 3.11 do uv quản lý, FFmpeg. Cài `uv sync --all-
 
 Sao chép `.env.example` thành `.env` nếu chưa có. Không ghi đè `.env` hiện hữu. Không paste key vào frontend hoặc lệnh curl có thể bị lưu trong history.
 
-```dotenv
-VLM_PROVIDER=gemini
-VLM_MODEL=gemini-2.5-flash
-GEMINI_API_KEY=...
-```
-
-Demo OpenCode Go theo lựa chọn của người dùng:
+Provider demo đã chốt ngày 22/09/2026: **DeepSeek V4.1 Flash qua OpenCode Go**, phục vụ quay video/thuyết trình.
 
 ```dotenv
 VLM_PROVIDER=opencode
-OPENCODE_MODEL=mimo-v2.5
+OPENCODE_MODEL=deepseek-v4.1-flash
 OPENCODE_API_KEY=...
 ```
 
-Chỉ adapter MiMo Chat Completions đã được triển khai; không đổi sang Muse Spark trong biến này vì Muse dùng Responses API. Không tự chuyển provider khi lỗi: việc chuyển provider cũng đổi nơi nhận ảnh. UI lấy tên provider từ `/health` để hiển thị consent đúng. Restart server sau khi đổi `.env`.
+DeepSeek dùng Chat Completions với `response_format=json_object`, schema trong prompt và thinking tắt; backend vẫn kiểm tra kiểu dữ liệu/ngữ nghĩa bằng Pydantic trước khi dùng kết quả. MiMo giữ nhánh `json_schema` nếu được chọn thủ công. Không đổi sang Muse Spark trong biến này vì Muse dùng Responses API. UI lấy tên provider/model từ `/health` để hiển thị consent đúng; không tự đổi model/provider khi lỗi. Restart server sau khi đổi `.env`.
+
+Adapter Gemini Developer API vẫn có sẵn khi cấu hình thủ công `VLM_PROVIDER=gemini`, `VLM_MODEL` và `GEMINI_API_KEY`; không cần cấu hình Vertex AI cho demo hiện tại.
 
 ```bash
 bash scripts/serve.sh
 ```
 
 Server phục vụ bản build, API và audio cùng origin ở `http://127.0.0.1:8000`. Dev frontend riêng: `npm run dev` trong `apps/web`, proxy API tới server 8000. `/health` chỉ báo key có được cấu hình, **không chứng minh key còn hiệu lực/quota**. Không bật access log, debug request body hoặc proxy ghi body.
+
+Tuyến demo đã publish, 11 MP3 và hai JSON kết quả DeepSeek được chia sẻ cùng repo theo [mục bàn giao dữ liệu demo](DEMO_HANDOFF.md#dữ-liệu-demo-đi-cùng-repo). Sau clone/pull không cần chạy `prepare` nếu `data/runtime/routes/lift-lobby-to-toilet-v1/` đã có; vẫn phải setup model/WASM và build frontend. Nếu `.env` có `DATA_DIR` riêng, bỏ cấu hình đó để dùng dữ liệu đi kèm hoặc chép tuyến vào `<DATA_DIR>/routes/`.
 
 ## HTTPS cho iPhone/Windows cùng LAN
 
@@ -103,6 +101,10 @@ Teach “offline” nghĩa là chuẩn bị trước replay: VLM và Edge-TTS v�
 
 ## Model và chi phí đã khảo sát
 
+**Cập nhật 22/09/2026:** dùng `deepseek-v4.1-flash` qua OpenCode Go theo lựa chọn của người dùng. Giữ deadline replay 10 giây ở server/12 giây ở browser; kết quả test với provider thật được ghi trong `docs/PROTOTYPE_VERIFICATION.md`. [DeepSeek JSON Output](https://api-docs.deepseek.com/guides/json_mode/) dùng `json_object`, nên không chỉ đổi tên model trong adapter MiMo cũ. Kết quả cuối luôn qua kiểm tra schema/bằng chứng và chờ người dùng xác nhận.
+
+Khảo sát trước khi chuyển sang DeepSeek:
+
 [OpenCode Go](https://opencode.ai/docs/go/) ngày 21/09/2026 niêm yết MiMo V2.5 $0.14 input/$0.28 output, Muse Spark 1.3 Contributor $0.10/$0.20 trên 1M token. `/models` trả MiMo V2.5, không thấy MiMo v3. V2.5 đọc ảnh/JSON được trong probe nhỏ, nhưng latency chưa đạt mục tiêu. Go hướng tới coding-agent traffic; không coi quyền dùng demo là bảo đảm dịch vụ cho sản phẩm. Muse Contributor cho phép sử dụng prompts/completions để huấn luyện, nên không được tự thay vào consent MiMo. Các probe Muse trong phiên chỉ dùng ảnh chữ tổng hợp.
 
 [Codex non-interactive](https://learn.chatgpt.com/docs/non-interactive-mode) hỗ trợ ảnh qua CLI và `--output-schema`, tái dùng đăng nhập CLI. Có thể hỗ trợ chuẩn bị/đánh giá demo. Prototype không nhúng agent Codex vào endpoint replay; chưa đo được độ trễ CLI và không lấy token đăng nhập để giả lập một API key.
@@ -113,7 +115,7 @@ Gemini dùng SDK và [structured output](https://ai.google.dev/gemini-api/docs/s
 
 ```bash
 cd apps/server
-uv run pytest -q
+uv run python -m pytest -q
 uv run ruff check navigation tests
 cd ../web
 npm test

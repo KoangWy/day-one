@@ -1,6 +1,6 @@
 # Prototype verification — test results and known limits
 
-Internal note. Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE.
+Internal note. Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE. Added 22/09/2026: §1c records the real DeepSeek `/replay` smoke on the demo switch. Canonical backend command is now `uv run python -m pytest -q` (the plain `uv run pytest -q` launcher errored on this machine).
 
 Locked demo route: **Lift lobby → Toilet, 2 checkpoints** (`lift-lobby-to-toilet-v1`). Approved exception to the Tier A spec's 4–5 text-sign requirement (`docs/brainstorm/specs/2026-09-21-unified-day1-nav-design.md:18-24`): accepts both text signs and wheelchair pictograms plus physical features. The `route.json` schema is unchanged.
 
@@ -41,6 +41,38 @@ Fixed in this session:
 - E2E camera journeys skip with a reason on browsers without `MediaStream` instead of failing with `canvas.captureStream is not a function`.
 - `scripts/setup_https.sh` install hint now covers Windows (`winget install FiloSottile.mkcert`).
 
+## 1c. Real provider smoke on the DeepSeek demo switch (22/09/2026, `main` @ `45e961d` + the DeepSeek adapter patch)
+
+Context: the user chose **OpenCode Go / DeepSeek V4.1 Flash** (`VLM_PROVIDER=opencode`, `OPENCODE_MODEL=deepseek-v4.1-flash`) for the hackathon demo/video. The adapter posts Chat Completions with `response_format=json_object`, the JSON schema plus an example Evidence object in the prompt, and `thinking: disabled`; the legacy MiMo branch keeps `json_schema`. The strict Pydantic parse and the evidence guard (`Evidence.supports`, `models.py:125`) are unchanged, so JSON mode cannot lower the match bar. Deadlines stay at 10 s server / 12 s browser; no auto provider fallback, no hidden retries.
+
+| Check | Command | Actual result |
+|---|---|---|
+| Backend after the fail-closed fix | `cd apps/server && uv run python -m pytest -q` | **51 passed** (43 inherited + 7 malformed-200 shapes + 1 model-aware label) |
+| Backend lint | `uv run ruff check navigation tests` | **All checks passed** |
+| Frontend unit | `cd apps/web && npm test` | **8 passed** |
+| Frontend build | `npm run build` | pass, PWA `generateSW`, 11 precache entries (384.81 KiB) |
+| Mock E2E | `npm run test:e2e` | **14 passed** (Chromium 7 + WebKit 7, no skips on macOS) |
+| Real-build E2E | `npm run test:real` | **4 passed** (Chromium 2 + WebKit 2); `/replay` mocked, so not live-AI evidence |
+
+Measured through the real `/replay` ASGI endpoint on **existing reviewed-route frames** (three frames from `data/runtime/source-media/`, resized to ≤640 px and face-redacted locally before upload). Artifact: `data/runtime/deepseek-demo-smoke-2026-09-22.json` (included in the repository handoff allowlist on 22/09), recorded 2026-09-21T17:15Z = 00:15 ICT 22/09. This is **not** a fresh walk or a browser/device capture.
+
+| Case | `step_index` | Expected | HTTP | `matched` | Correct | API ms |
+|---|---|---|---|---|---|---|
+| origin | -1 | true | 200 | true | yes | 2317 |
+| office | 0 | true | 200 | false | **no** | 2321 |
+| toilet | 1 | true | 200 | true | yes | 2474 |
+| office is not origin | -1 | false | 200 | false | yes | 2411 |
+| toilet is not office | 0 | false | 200 | false | yes | 2333 |
+| origin is not toilet | 1 | false | 200 | false | yes | 2397 |
+
+Six real requests: 6/6 HTTP 200, **5/6 correct**, p50 API latency **2.365 s**, no timeouts; all three negatives were rejected (no false positives). The one miss is the **office** landmark against `lift-20.jpg`: `data/runtime/deepseek-office-diagnostic-2026-09-22.json` shows `text_readable=false` on the ≤640 px frame; the model's `observed_features` describe a sign with small, unreadable text and a large gray square obscuring the center of the frame (it does not state whether the sign sits behind that square). That is a **false negative on old footage**, not an infrastructure failure, and the evidence guard correctly refused to match unreadable text.
+
+Honest limits for the demo:
+- The 2.365 s is **single-request API time**, not three-frame origin latency or end-to-end click-to-result time.
+- The office checkpoint needs a **closer, clearer camera frame**; a complete AI-verified route on a real device has not been rehearsed. Do not present "100%" or "ready" for a full real route.
+- If a walkthrough uses the override button, the deck/video must label it a **manual override**, not an AI match.
+- `npm run test:real` mocks `/replay`, so it does not prove live AI.
+
 ## 2. Published route (read from `data/runtime/routes/lift-lobby-to-toilet-v1/`)
 
 - `route.json` is byte-identical to `data/examples/lift-lobby-to-toilet-v1/route.json` (s1 along the corridor to the Office for Research & Innovation sign; s2 along the same corridor to the toilet door with two wheelchair symbols plus the louvered door).
@@ -48,6 +80,8 @@ Fixed in this session:
 - Prebuilt Edge-TTS audio (`en-US-AriaNeural`): 11 MP3 files, ~513 KB total (origin 42 KB, retry 41 KB, s0/s1-instruction ~59 KB each, questions 28–32 KB, fallback 58–60 KB per anchor, override 26 KB, arrival 43 KB). Published atomically via rename; published routes are immutable — `prepare` refuses to overwrite.
 
 ## 3. Provider probes actually measured (not ground truth)
+
+**Current demo provider (22/09/2026): OpenCode Go / DeepSeek V4.1 Flash — see §1c.** The MiMo probe below is the earlier investigation, kept as history.
 
 `data/runtime/model-probe.json` (OpenCode Go `mimo-v2.5`, synthetic text signs, `synthetic_only=true`): 1/1 correct match, 2 cases with `unavailable_or_timeout`, latency **10.4–11.5 s** — above the plan's p50 ≤5 s target. Conclusion in `docs/PROTOTYPE_RUNBOOK.md:100-106`: keep `VLM_PROVIDER=gemini` as default, `opencode` is demo opt-in only; do not switch to Muse Spark (different Responses API plus training-consent terms). `/health` only reports that a key is configured, never that quota is valid.
 
@@ -60,18 +94,20 @@ Real-VLM evaluation is **NOT DONE**: use `apps/server/navigation/evaluate.py:14-
 - Each provider request has a 10 s server deadline; 503 ≠ image mismatch; no hidden retries; Repeat only replays the MP3 (`docs/PROTOTYPE_RUNBOOK.md:89-98`).
 - "Offline" teach still needs network for the VLM + Edge-TTS; `faster-whisper base.en` runs on CPU and echoey/accented transcripts must be hand-fixed; a `voice_cue` that does not match the transcript is deleted (`apps/server/navigation/teach.py:186-189`).
 - Unreviewed leftover draft: `data/runtime/drafts/lift-lobby-vlm-draft/` (VLM-generated route, non-conforming step IDs, unverified `voice_cue` quotes) — never publish, never demo. Delete or re-review before the freeze.
-- Media/keys/runtime are local-only data, ignored by Git (`.gitignore`): `.env`, `*.pem/key/crt`, `*.mp3/wav/mp4/mov`, `data/runtime/`, `data/models/`, `apps/web/public/privacy/`, `.certs/`. Source videos in `data/runtime/source-media/` (~147 MB MOV) are never committed.
+- Keys, certificates, source media, downloaded models and other runtime data remain ignored by Git. The reviewed `lift-lobby-to-toilet-v1` route JSON, `published.json`, its 11 generated MP3s and the two DeepSeek result JSON files are explicit handoff exceptions (see `DEMO_HANDOFF.md`). Source videos/frames in `data/runtime/source-media/` remain local or on Drive.
 
 ## 5. Status of the pre-freeze checklist (needed before the 15:00 22/09 freeze)
 
-Done:
-- [x] `npm run test:e2e` on Chromium + WebKit — §1b (Chromium full; WebKit camera journeys skipped on Windows).
-- [x] axe on the real build — §1b, Chromium, with VLM mocked.
-- [x] Prototype committed — `6d67ad8` on `main`.
+Automated checks — current on macOS 22/09/2026 (see §1c):
+- [x] `npm run test:e2e` on Chromium + WebKit — **14 passed** (Chromium 7 + WebKit 7, no skips) on macOS; the earlier Windows WebKit skips are historical (§1b).
+- [x] `npm run test:real` on Chromium + WebKit — **4 passed** (Chromium 2 + WebKit 2) against the real server, `dist`, published route and prebuilt MP3s; **`/replay` mocked**, so this is not live-AI evidence.
+- [x] axe on the real build — Chromium + WebKit, with VLM mocked (§1c).
+- [x] Original prototype committed — `6d67ad8` on `main`; the DeepSeek adapter, updated documentation and demo assets are included in the 22/09 handoff commit (see Git history).
 
-Still NOT DONE (need hardware, people, a key or a Mac — cannot be done from code):
-- [ ] The 5 WebKit camera journeys on macOS or Linux (`npm run test:e2e` + `npm run test:real`): Windows WebKit has no `MediaStream`.
-- [ ] Real-VLM evaluation with false-positive/latency numbers — this Windows laptop has no key (`/health` → `vlm_configured=false`); add `GEMINI_API_KEY` to `.env` and run `navigation.evaluate` with a local manifest.
+Historical, kept for reference — Windows laptop 21/09/2026 (§1b): `npm run test:e2e` Chromium 7/7, WebKit 2 passed + 5 skipped; `npm run test:real` Chromium 2/2, WebKit 1 passed + 1 skipped. Windows WebKit has no `MediaStream`, so its camera journeys skip.
+
+Still NOT DONE (need hardware, people or fresh captures — cannot be done from code):
+- [ ] Real-VLM evaluation with false-positive/latency numbers — run `navigation.evaluate` with a local manifest (minimum 3 fresh images per landmark, 10 negatives, true/false origin). Partly covered on macOS 22/09 — §1c has 6 real `/replay` frames and p50 API latency on existing frames. Use the already-configured OpenCode provider/key (`VLM_PROVIDER=opencode`, `OPENCODE_MODEL=deepseek-v4.1-flash`); no separate Gemini key setup is needed for the demo.
 - [ ] At least 3 full walks plus `scripts/metrics.py` over session metrics with sample/field split (`scripts/metrics.py:8-30`).
-- [ ] Real NVDA on Windows + VoiceOver/Safari on a real iPhone (screen recording with audio). Automated axe does not replace these.
-- [ ] Same-LAN HTTPS test (`scripts/setup_https.sh` + `scripts/serve.sh --https`) whenever the laptop IP changes — mkcert is not installed on the Windows laptop yet; allow Python through the firewall for Private networks only.
+- [ ] Real NVDA on Windows + VoiceOver/Safari on a real iPhone (screen recording with audio). Automated axe and WebKit automation do not replace these.
+- [ ] Same-LAN HTTPS test (`scripts/setup_https.sh` + `scripts/serve.sh --https`) whenever the laptop IP changes — historical Windows note: mkcert not installed on the Windows laptop yet; allow Python through the firewall for Private networks only.

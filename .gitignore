@@ -34,8 +34,32 @@ __pycache__/
 test-results/
 playwright-report/
 coverage/
-data/runtime/
+data/runtime/*
 data/models/
 apps/web/public/privacy/
 .certs/
 *.tsbuildinfo
+
+# Reviewed demo handoff: only this published route, its generated speech and
+# these two sanitized result files are shared. Other runtime data stays local.
+!data/runtime/routes/
+data/runtime/routes/*
+!data/runtime/routes/lift-lobby-to-toilet-v1/
+data/runtime/routes/lift-lobby-to-toilet-v1/*
+!data/runtime/routes/lift-lobby-to-toilet-v1/route.json
+!data/runtime/routes/lift-lobby-to-toilet-v1/published.json
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/
+data/runtime/routes/lift-lobby-to-toilet-v1/audio/*
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/origin.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/origin-retry.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/s0-instruction.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/s0-question.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/s1-instruction.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/s1-question.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/fallback-0.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/fallback-1.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/fallback-2.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/override.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v1/audio/arrival.mp3
+!data/runtime/deepseek-demo-smoke-2026-09-22.json
+!data/runtime/deepseek-office-diagnostic-2026-09-22.json

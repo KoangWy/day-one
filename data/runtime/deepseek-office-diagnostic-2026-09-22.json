@@ -1,0 +1,14 @@
+{
+  "kind": "office_false_negative_diagnostic",
+  "source": "lift-20.jpg",
+  "evidence": {
+    "matched": false,
+    "observed_text": "",
+    "observed_features": "Glass office frontage on the left with a sign containing small, unreadable text; a large gray square obscures the center of the image; a person in dark clothing is partially visible; corridor with wooden wall panel, vent, and yellow cone in the background.",
+    "text_readable": false,
+    "contradictory": false,
+    "matched_features": []
+  },
+  "supports": false,
+  "latency_ms": 2434
+}
