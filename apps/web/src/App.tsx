@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { getJSON, replay } from './api'
 import { initial, parseCommand, transition, type Event, type State } from './machine'
 import { downloadMetrics, type Metric } from './metrics'
-import { captureRedacted, loadFaceDetector } from './privacy'
+import { capturePhoto } from './capture'
 import { speechConstructor, type Recognition } from './speech'
 import type { Assets, Route } from './types'
 
@@ -176,8 +176,6 @@ export default function App() {
     try {
       if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) throw new Error('Camera needs a secure connection. Open the trusted HTTPS address supplied by your guide.')
       if (!navigator.onLine) throw new Error('You are offline. Reconnect to the laptop before starting.')
-      await loadFaceDetector()
-      if (token !== generation.current) return
       const acquired = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
       if (token !== generation.current) { acquired.getTracks().forEach(t => t.stop()); return }
       stream.current = acquired
@@ -222,8 +220,8 @@ export default function App() {
       const count = index === -1 ? 3 : 1
       for (let i = 0; i < count; i++) {
         if (!valid()) return
-        setCaptureNotice(count === 3 ? `Taking starting-point photo ${i + 1} of 3. Keep the starting landmark in view.` : 'Protecting faces and checking the checkpoint.')
-        images.push(await captureRedacted(video.current))
+        setCaptureNotice(count === 3 ? `Taking starting-point photo ${i + 1} of 3. Keep the starting landmark in view.` : 'Taking a photo and checking the checkpoint.')
+        images.push(capturePhoto(video.current))
         if (i < count - 1) await new Promise(resolve => setTimeout(resolve, 1000))
       }
       let matches = 0
@@ -319,7 +317,7 @@ export default function App() {
           </div>
 
           {state.phase === 'idle' && <>
-            <div className="privacy-note"><h3>A photo only when you ask.</h3><p>Photos are processed on this device to obscure detected faces, then sent to {providerLabel} for a landmark check. Face detection can miss people. Use an agreed filming area and avoid private information. Replay photos are not saved by this app.</p></div>
+            <div className="privacy-note"><h3>A photo only when you ask.</h3><p>Each photo is sent to {providerLabel} for a landmark check. Use an agreed filming area and avoid bystanders and private information. Replay photos are not saved by this app.</p></div>
             <label className="checkbox"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />I agree to send these photos for visual checks.</label>
             {loading && <p role="status">Loading your reviewed route…</p>}
             {loadError && <><p role="alert" className="error">{loadError}</p><button className="secondary" onClick={() => void loadRoutes()}>Reload routes</button></>}

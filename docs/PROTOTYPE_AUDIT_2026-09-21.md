@@ -2,13 +2,13 @@
 
 Kiểm tra tối 21/09/2026, trên Mac Apple Silicon; mã nguồn `main` tại `45e961d`. `git status` sạch trước kiểm tra; `git pull origin main` báo đã cập nhật. Người dùng xác nhận **chưa chạy thử thực tế**. Báo cáo này bổ sung cho `PROTOTYPE_VERIFICATION.md`. Trong phiên audit, người dùng cung cấp key OpenCode mới sau khi thu hồi key cũ; đã cập nhật riêng key trong `.env` bị Git bỏ qua, không ghi key vào báo cáo/log. Không sửa code, lựa chọn provider/model hoặc tuyến đã duyệt.
 
-_(Mục **“## Kết luận”** và **“## 1. Đã chạy lại”** dưới đây là **quan sát lịch sử ngày 21/09/2026** với MiMo/35 test; nhiều câu không còn đúng. Trạng thái hiện tại xem mục “Cập nhật 22/09/2026” ở dưới và `docs/PROTOTYPE_VERIFICATION.md` §1c. Câu “Không sửa code, lựa chọn provider/model…” chỉ đúng cho phiên audit 21/09. Riêng mục **“## 2. Phát hiện cần xử lý”** (active route, pipeline đánh giá, metrics) vẫn là các phát hiện còn hiệu lực, đang là backlog hoàn thiện chưa sửa.)_
+_(Mục **“## Kết luận”** và **“## 1. Đã chạy lại”** dưới đây là **quan sát lịch sử ngày 21/09/2026** với MiMo/35 test; nhiều câu không còn đúng. Trạng thái hiện tại xem mục “Cập nhật 22/09/2026” ở dưới và `docs/PROTOTYPE_VERIFICATION.md` §1c. Câu “Không sửa code, lựa chọn provider/model…” chỉ đúng cho phiên audit 21/09. Riêng mục **“## 2. Phát hiện cần xử lý”**: active route và metrics vẫn là backlog hoàn thiện chưa sửa; pipeline đánh giá đã sửa ngày 22/09/2026.)_
 
 ## Cập nhật 22/09/2026 — trạng thái hiện tại (thay kết luận P0 bên dưới)
 
 Kết luận P0 "MiMo vượt deadline" bên dưới là **quan sát lịch sử ngày 21/09/2026** với `mimo-v2.5`; giữ nguyên để đối chiếu nhưng không còn là trạng thái demo hiện tại. Ngày 22/09/2026 người dùng chốt demo dùng **DeepSeek V4.1 Flash qua OpenCode Go** (`VLM_PROVIDER=opencode`, `OPENCODE_MODEL=deepseek-v4.1-flash`). Adapter đã chuyển sang Chat Completions với `response_format=json_object`, schema + ví dụ Evidence trong prompt và thinking tắt; nhánh MiMo giữ `json_schema`; Pydantic strict và evidence guard giữ nguyên. Deadline vẫn server 10 giây/client 12 giây, không tự đổi provider, không retry ẩn.
 
-Đo thật ngày 22/09/2026 trên ba frame cũ của tuyến đã duyệt (chi tiết `docs/PROTOTYPE_VERIFICATION.md` §1c): 6/6 HTTP 200, **5/6 case đúng**, p50 API **2.365 giây**, không timeout, ba case âm tính bị từ chối đúng. Mốc **office** là false negative: chữ biển không đọc được sau khi thu nhỏ còn 640 px, không phải lỗi hạ tầng. Đây là ảnh có sẵn, **không phải** lượt đi tuyến/browser mới và chưa chứng minh tuyến thật chạy hết. Các mục active route, pipeline đánh giá và metrics bên dưới vẫn là backlog hoàn thiện đã ghi nhận, **chưa** sửa trong lần này.
+Đo thật ngày 22/09/2026 trên frame của video tuyến đã duyệt `IMG_7546.MOV`, gửi đúng như app web chụp (cạnh dài ≤640 px, JPEG 85; chi tiết `docs/PROTOTYPE_VERIFICATION.md` §1c): 10/10 HTTP 200, **6/6 case chính đúng** (origin, office, toilet và ba case âm tính chéo), **không có false positive**, p50 API **3,03 giây**, không timeout. Mốc **office** chỉ khớp khi biển đủ lớn trong khung (từ giây 20,75); chụp xa hơn (20,25 và 20,5 giây) thì chữ quá nhỏ và bị từ chối đúng. Đây là ảnh trích từ video có sẵn, **không phải** lượt đi tuyến/browser mới và chưa chứng minh tuyến thật chạy hết. Mục pipeline đánh giá bên dưới đã sửa; active route và metrics vẫn là backlog hoàn thiện đã ghi nhận, **chưa** sửa.
 
 ## Kết luận _(lịch sử 21/09/2026 — số liệu và trạng thái bên dưới đã cũ; xem “Cập nhật 22/09/2026” ở trên)_
 
@@ -27,7 +27,7 @@ Phạm vi đúng vẫn là **Lift lobby → Toilet, 2 checkpoint**, theo thay đ
 | `npm run test:e2e` | **14 passed**, Chromium 7 + WebKit 7; không skip trên Mac |
 | `npm run test:real` | **4 passed**, Chromium 2 + WebKit 2 |
 | Route/audio | Route đã publish, đủ **11 MP3**; kiểm tra API/audio và axe qua các phase thuộc bộ real-build |
-| Tài sản local | Có face model và chứng chỉ HTTPS; chưa chứng minh thiết bị thật đã trust/kết nối được |
+| Tài sản local | Có chứng chỉ HTTPS; chưa chứng minh thiết bị thật đã trust/kết nối được |
 
 Giới hạn: E2E dùng camera tổng hợp. Cả bộ `test:real` cũng **mock `/replay`**; các kết quả trên không đo độ chính xác AI hoặc khả năng đi tuyến. WebKit tự động không thay thế iPhone thật. [Tài liệu Playwright](https://playwright.dev/docs/accessibility-testing) cũng nêu kiểm thử tự động không phát hiện được mọi lỗi accessibility.
 
@@ -69,13 +69,15 @@ Gemini hiện trả **401 / UNAUTHENTICATED** với credential có sẵn; chưa 
 
 **Điều kiện đạt:** có v1 và v2 cùng lúc, chọn v2 thì UI, metadata, MP3 và `/replay` đều dùng v2; route ID không tồn tại phải báo rõ.
 
-### P1 — Pipeline đánh giá ảnh khác replay thực tế
+### P1 — Pipeline đánh giá ảnh khác replay thực tế _(đã sửa 22/09/2026)_
 
-`navigation.evaluate` gọi `FaceBlur.blur()` trực tiếp trên ảnh đầu vào (`evaluate.py:24`). `FaceBlur` che mặt rồi lưu nguyên kích thước (`teach.py:102–122`). Replay trên web thu nhỏ cạnh dài xuống tối đa 640 px trước nhận diện/encode; API cũng giới hạn 640 px.
+**Đã sửa:** `navigation.evaluate` giờ xoay ảnh theo EXIF, thu cạnh dài về ≤640 px và encode JPEG chất lượng 85 giống app web (`replay_jpeg` trong `evaluate.py`) trước khi gọi provider. Mô tả vấn đề ban đầu giữ bên dưới để đối chiếu.
+
+`navigation.evaluate` gửi ảnh đầu vào với nguyên kích thước. Replay trên web thu nhỏ cạnh dài xuống tối đa 640 px trước khi encode; API cũng giới hạn 640 px.
 
 **Đã tái hiện local, không gọi mạng:** ảnh tổng hợp 1280×960 sau đường xử lý dùng bởi evaluation vẫn là 1280×960. Kết quả đánh giá ảnh lớn có thể không đại diện khả năng đọc biển nhỏ trong ảnh replay.
 
-**Cách hoàn tất:** chuẩn hóa hướng ảnh và kích thước ≤640 trước che mặt, dùng JPEG chất lượng tương đương web; ghi kích thước cùng kết quả. Đánh giá cuối nên có cả ảnh được chụp qua pipeline của trình duyệt, vì detector/encoder Python và web vẫn có khác biệt.
+**Cách hoàn tất:** chuẩn hóa hướng ảnh và kích thước ≤640, dùng JPEG chất lượng tương đương web; ghi kích thước cùng kết quả. Đánh giá cuối nên có cả ảnh được chụp qua pipeline của trình duyệt, vì encoder Python và web vẫn có khác biệt.
 
 **Điều kiện đạt:** ảnh gửi đi trong mọi case ≤640; bộ ảnh đánh giá phản ánh khoảng cách, góc cầm điện thoại và ánh sáng thực tế, không chỉ ảnh cận cảnh đẹp.
 
@@ -107,7 +109,7 @@ Giữ tuyên bố accessibility là **mục tiêu/phạm vi đã test**, không 
 
 ## 4. Thứ tự hoàn tất đề xuất cho ba người
 
-1. **Chặn lỗi trước khi thu evidence:** người phụ trách backend xử lý latency/deadline, chốt provider/model, sửa chọn active route; người frontend sửa metrics và bổ sung kiểm tra hồi quy có ý nghĩa; người còn lại chuẩn bị ảnh có ground truth, thiết bị/consent và deck template. Sửa pipeline evaluate trước khi dùng nó đo AI. Auth OpenCode đã qua với key mới.
+1. **Chặn lỗi trước khi thu evidence:** người phụ trách backend xử lý latency/deadline, chốt provider/model, sửa chọn active route; người frontend sửa metrics và bổ sung kiểm tra hồi quy có ý nghĩa; người còn lại chuẩn bị ảnh có ground truth, thiết bị/consent và deck template. Pipeline evaluate đã được chuẩn hóa giống replay (22/09). Auth OpenCode đã qua với key mới.
 2. **Có một lượt tích hợp thật sớm nhất:** chạy HTTPS → camera iPhone → provider thật → hai checkpoint → arrival. Nếu chưa xong, tập trung vào nguyên nhân đang chặn lượt này.
 3. **Thu evidence trong ngày 22/09:** ảnh đánh giá, ba lượt đi, NVDA/VoiceOver và phản hồi người dùng. Duyệt lại chỉ đường nếu cách nói theo dấu hiệu thị giác chưa dùng được với người nghe; publish version mới và kiểm tra UI dùng đúng version.
 4. **Chốt trước 15:00 ngày 22/09:** route, provider/model, code, số liệu và video demo. Chuẩn bị bản quay thành công thật làm phương án dự phòng; ghi đúng pre-recorded/mock nếu sử dụng. Không đổi model sau khi đã thu số liệu mà bỏ qua đánh giá lại.

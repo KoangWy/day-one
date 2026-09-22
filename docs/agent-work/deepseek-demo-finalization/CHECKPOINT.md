@@ -4,7 +4,7 @@
 
 Khôi phục từ session **Xác minh và đề xuất hoàn thiện** (`01a0c4d7-5d76-75b3-a3da-bfc88b7de625`). Quyết định cuối của người dùng: dùng **DeepSeek V4.1 Flash qua OpenCode Go** cho demo/video hackathon, hoàn tất thay đổi và báo kết quả. Giữ tuyến `lift-lobby-to-toilet-v1`, hai checkpoint; không mở rộng sang toàn bộ backlog của audit.
 
-Áp dụng kế hoạch Tier A đã có tại `docs/brainstorm/specs/2026-09-21-unified-day1-nav-plan.md`, với thay đổi tuyến đã được duyệt và quyết định provider mới. Giữ hợp đồng `/replay`, xác nhận của người dùng, kiểm tra bằng chứng, che mặt, timeout hiện tại và không tự đổi provider. Không nới điều kiện nhận diện để ảnh mờ vượt kiểm tra.
+Áp dụng kế hoạch Tier A đã có tại `docs/brainstorm/specs/2026-09-21-unified-day1-nav-plan.md`, với thay đổi tuyến đã được duyệt và quyết định provider mới. Giữ hợp đồng `/replay`, xác nhận của người dùng, kiểm tra bằng chứng, timeout hiện tại và không tự đổi provider. Không nới điều kiện nhận diện để ảnh mờ vượt kiểm tra.
 
 ## Baseline và phân công
 
@@ -45,3 +45,7 @@ Không còn việc code trong gói đã duyệt. Bước tiếp theo để quay 
 Theo yêu cầu tiếp theo của người dùng, `.gitignore` cho phép đúng 15 file: `route.json`, `published.json`, 11 MP3 tổng hợp của tuyến demo và hai JSON kết quả DeepSeek. Nội dung các artifact được giữ nguyên; không gọi lại TTS/VLM. README/runbook/handoff được cập nhật để máy mới dùng sẵn tuyến khi clone/pull. Video/frame nguồn, draft, log, secrets và runtime ngoài danh sách tiếp tục bị bỏ qua.
 
 Người dùng đã yêu cầu commit và push toàn bộ phần bàn giao lên `main`. Code, tài liệu, audit/checkpoint và 15 artifact demo được đưa vào cùng commit `Finalize DeepSeek demo and share reviewed demo assets`; xem Git history để lấy commit ID. Đã kiểm tra đúng 15 artifact được Git nhận, 12 đường dẫn nhạy cảm/ngoài phạm vi vẫn bị bỏ qua, route/review khớp fixture đã duyệt và đủ 11 audio theo metadata. Các bộ test đã đạt trước đó; các thay đổi sau kiểm thử chỉ là tài liệu và quy tắc chia sẻ artifact.
+
+## Cập nhật sau — 22/09/2026
+
+Hai artifact `deepseek-demo-smoke-2026-09-22.json` và `deepseek-office-diagnostic-2026-09-22.json` đã được xóa khỏi repo và thay bằng `data/runtime/deepseek-route-smoke-2026-09-22.json`: frame trích từ `IMG_7546.MOV`, gửi đúng như app web chụp (cạnh dài ≤640 px, JPEG 85). Kết quả: 10/10 HTTP 200, 6/6 case chính đúng, không có false positive, p50 API 3,03 giây; mốc office khớp khi biển đủ gần (từ giây 20,75). Danh sách chia sẻ qua Git còn 14 file. Chi tiết: `docs/PROTOTYPE_VERIFICATION.md` §1c–1d.

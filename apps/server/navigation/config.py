@@ -6,5 +6,4 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(ROOT / ".env")
 DATA = Path(os.environ.get("DATA_DIR", ROOT / "data/runtime"))
-FACE_MODEL = ROOT / "data/models/blaze_face_short_range.tflite"
 WEB = ROOT / "apps/web/dist"

@@ -76,11 +76,11 @@ async def test_ingest_cleanup_draft_only_and_voice_quote_provenance(tmp_path, mo
         local_dirs.append(folder)
         (folder / "speech.wav").write_bytes(b"private audio")
         (folder / "frame-0001.jpg").write_bytes(b"private frame")
-        return [(0, b"REDACTED")], [{"start": 0, "end": 1, "text": "A real guide cue"}]
+        return [(0, b"FRAME")], [{"start": 0, "end": 1, "text": "A real guide cue"}]
 
     class Provider:
         async def draft(self, route_id, frames, segments):
-            assert frames[0][1] == b"REDACTED"
+            assert frames[0][1] == b"FRAME"
             if fail:
                 raise ProviderUnavailable()
             route = Route.model_validate_json((SAMPLE / "route.json").read_text())
@@ -139,10 +139,3 @@ def test_no_audio_requires_manual_transcript(tmp_path, monkeypatch):
     monkeypatch.setattr("navigation.teach.extract", lambda *args: (False, 10))
     with pytest.raises(TeachError, match="no audio"):
         process_local(Path("video.mp4"), tmp_path, None)
-
-
-def test_face_model_absent_blocks_processing(tmp_path, monkeypatch):
-    from navigation.teach import FaceBlur
-    monkeypatch.setattr("navigation.teach.FACE_MODEL", tmp_path / "missing.tflite")
-    with pytest.raises(TeachError, match="face model missing"):
-        FaceBlur()

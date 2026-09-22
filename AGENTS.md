@@ -48,8 +48,8 @@ Hard-won strategy conclusions from the research doc (section 0 and HƯỚNG 1 ·
 ├── docs/               # core references (see above) + PROTOTYPE_RUNBOOK / PROTOTYPE_VERIFICATION / DEMO_HANDOFF + brainstorm/specs (Tier A plan)
 ├── apps/server/        # FastAPI + uv: /routes, /replay, /audio, /ingest-video; teach/prepare/evaluate CLIs
 ├── apps/web/           # React + Vite PWA; e2e/ (mock API) and e2e-real/ (real build, /replay mocked)
-├── data/examples/      # reviewed route fixtures (demo: lift-lobby-to-toilet-v1); data/runtime + data/models are gitignored
-├── scripts/            # serve.sh, setup_https.sh, setup_assets.py, metrics.py
+├── data/examples/      # reviewed route fixtures (demo: lift-lobby-to-toilet-v1); data/runtime is gitignored
+├── scripts/            # serve.sh, setup_https.sh, metrics.py
 ├── .agents/skills/     # vendored agent skills (brainstorming, find-skills, grill-me, grilling) — do not edit
 ├── skills-lock.json    # skill pins
 └── .gitignore
@@ -68,5 +68,5 @@ Setup, run, teach, HTTPS and Windows notes: `docs/PROTOTYPE_RUNBOOK.md`. No CI.
 ## NOTES
 - Codegraph index is stale (returns unrelated `ĐACN/` paths) — verify with direct reads, don't trust it here.
 - File reads show `#XX|` line prefixes (e.g. `#WT|`) — tool-injected artifacts, ignore them.
-- `.gitignore` already excludes keys/certs, media (`*.pptx`, `*.mp4`, `*.mov`, `*.mp3`), `data/runtime/`, `data/models/`, build output — never commit real images, video or `.env`.
+- `.gitignore` already excludes keys/certs, media (`*.pptx`, `*.mp4`, `*.mov`, `*.mp3`), `data/runtime/`, build output — never commit real images, video or `.env`.
 - `.agents/skills/` is vendored third-party (`grill-me` vs `grilling` is upstream duplication, same source) — never edit, never document per-dir.

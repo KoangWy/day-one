@@ -1,6 +1,6 @@
 # Prototype verification — test results and known limits
 
-Internal note. Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE. Added 22/09/2026: §1c records the real DeepSeek `/replay` smoke on the demo switch. Canonical backend command is now `uv run python -m pytest -q` (the plain `uv run pytest -q` launcher errored on this machine).
+Internal note. Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE. Added 22/09/2026: §1c records the real DeepSeek `/replay` smoke on frames of the reviewed route video; §1d records the Windows re-run after the capture change. Canonical backend command is now `uv run python -m pytest -q` (the plain `uv run pytest -q` launcher errored on this machine).
 
 Locked demo route: **Lift lobby → Toilet, 2 checkpoints** (`lift-lobby-to-toilet-v1`). Approved exception to the Tier A spec's 4–5 text-sign requirement (`docs/brainstorm/specs/2026-09-21-unified-day1-nav-design.md:18-24`): accepts both text signs and wheelchair pictograms plus physical features. The `route.json` schema is unchanged.
 
@@ -16,7 +16,7 @@ Locked demo route: **Lift lobby → Toilet, 2 checkpoints** (`lift-lobby-to-toil
 
 Backend coverage (read from `apps/server/tests/`): `route.json` matches the schema in `apps/server/navigation/models.py:25-33`, origin never returns a movement instruction (`test_api.py:35-41`), insufficient evidence (wrong text/blurry/contradictory/generic) is always `matched=false` (`test_api.py:44-56`), bad requests return 404/422/503 without echoing base64 (`test_api.py:59-94`), no replay image storage (`test_api.py:17-31`), `/ingest-video` blocks non-loopback + cross-origin before parsing (`test_api.py:97-102`), atomic publish — a TTS failure never exposes a half-published route (`test_teach.py`), pictograms require every `required_features` entry (`test_provider.py`), the OpenCode adapter uses strict schema with no silent retries (`test_provider.py`).
 
-Frontend coverage (`apps/web/e2e/replay.spec.ts`, 7 tests, mock API + synthetic camera): origin needs ≥2 matches out of 3 photos, no Next at origin; fallback only after 2 consecutive misses; Repeat never calls the VLM; override needs a separate Yes and counts a manual override; Stop/background/reload reset to origin; a failed face model blocks all uploads; axe `wcag2a/wcag2aa/wcag21aa/wcag22aa` reports no serious/critical violations **on the mock**. E2E runs the real MediaPipe/WASM build but with a fake camera/API — **it says nothing about landmark accuracy**.
+Frontend coverage (`apps/web/e2e/replay.spec.ts`, 5 tests, mock API + synthetic camera): origin needs ≥2 matches out of 3 photos, no Next at origin; fallback only after 2 consecutive misses; Repeat never calls the VLM; override needs a separate Yes and counts a manual override; Stop/background/reload reset to origin; axe `wcag2a/wcag2aa/wcag21aa/wcag22aa` reports no serious/critical violations **on the mock**. E2E runs the real build but with a fake camera/API — **it says nothing about landmark accuracy**.
 
 ## 1b. Re-run on the Windows laptop (21/09/2026 evening, `main` @ `a28c46b` + fixes below)
 
@@ -31,10 +31,10 @@ Environment: Windows 11, Git Bash, Node 24.19, npm 11.17, uv 0.12.17 (Python 3.1
 | Mock E2E | `npm run test:e2e` | Chromium **7/7 passed**. WebKit **2 passed, 5 skipped**: Playwright's Windows WebKit has no `MediaStream`/`getUserMedia`, so camera journeys skip with a stated reason instead of faking capture |
 | Real build E2E (new) | `npm run test:real` | Chromium **2/2 passed**; WebKit **1 passed, 1 skipped** (idle-screen axe passed before the camera skip). Real FastAPI + real `dist` + published route + real MP3s; **only `/replay` mocked** |
 | Route publish | `uv run python -m navigation.prepare ../../data/examples/lift-lobby-to-toilet-v1 --reviewer "Team Offixed" --reviewed` | Published in ~8 s, `sample=False`, 11 MP3 (512,928 bytes), `route.json` identical to the reviewed example |
-| Serve smoke | `bash scripts/serve.sh` | `/health` ok (`vlm_configured=false`), `/` 200, local face model 200, `/replay` without key → **503** (not a mismatch) |
+| Serve smoke | `bash scripts/serve.sh` | `/health` ok (`vlm_configured=false`), `/` 200, `/replay` without key → **503** (not a mismatch) |
 | Metrics | `uv run --project apps/server python scripts/metrics.py <session.json>` | Summarises a synthetic field session correctly (sample/field split) |
 
-What `test:real` proves on Chromium: every prebuilt MP3 is served as `audio/mpeg`; `sw.js` never precaches `/audio/`, `/routes` or `privacy/`; the demo route walks origin (3 photos, all ≤640 px) → s1 confirmed → s2 two misses → fallback naming the last confirmed landmark → explicit override → "Saved route finished" with "Arrival has not been visually verified"; camera released at the end; only reviewed MP3s are fetched; mock VLM text never reaches the UI; **no serious/critical axe violations** (wcag2a/2aa/21aa/22aa) at idle, origin confirm, walking, each checkpoint confirm, fallback, override and arrival. It says nothing about landmark accuracy.
+What `test:real` proves on Chromium: every prebuilt MP3 is served as `audio/mpeg`; `sw.js` never precaches `/audio/` or `/routes`; the demo route walks origin (3 photos, all ≤640 px) → s1 confirmed → s2 two misses → fallback naming the last confirmed landmark → explicit override → "Saved route finished" with "Arrival has not been visually verified"; camera released at the end; only reviewed MP3s are fetched; mock VLM text never reaches the UI; **no serious/critical axe violations** (wcag2a/2aa/21aa/22aa) at idle, origin confirm, walking, each checkpoint confirm, fallback, override and arrival. It says nothing about landmark accuracy.
 
 Fixed in this session:
 - **Windows encoding bug**: `prepare`, `storage`, `teach`, `teach_cli`, `evaluate` and `scripts/metrics.py` read/wrote JSON with the locale default (cp1252 here). A UTF-8 `review.json` containing `’` would be published as `â€™` into UI/TTS, and a Vietnamese reviewer name crashed publish with `UnicodeEncodeError`. All text I/O is now explicit UTF-8; regression test `test_reviewed_unicode_text_survives_publication_on_any_locale`.
@@ -54,24 +54,41 @@ Context: the user chose **OpenCode Go / DeepSeek V4.1 Flash** (`VLM_PROVIDER=ope
 | Mock E2E | `npm run test:e2e` | **14 passed** (Chromium 7 + WebKit 7, no skips on macOS) |
 | Real-build E2E | `npm run test:real` | **4 passed** (Chromium 2 + WebKit 2); `/replay` mocked, so not live-AI evidence |
 
-Measured through the real `/replay` ASGI endpoint on **existing reviewed-route frames** (three frames from `data/runtime/source-media/`, resized to ≤640 px and face-redacted locally before upload). Artifact: `data/runtime/deepseek-demo-smoke-2026-09-22.json` (included in the repository handoff allowlist on 22/09), recorded 2026-09-21T17:15Z = 00:15 ICT 22/09. This is **not** a fresh walk or a browser/device capture.
+Measured on 22/09/2026 through the real `/replay` ASGI endpoint (in-process `TestClient`, real DeepSeek provider from `.env`) on frames of the reviewed route video `IMG_7546.MOV`, each sent exactly as the web app captures it: longest edge ≤640 px (640×360), JPEG quality 85. Artifact: `data/runtime/deepseek-route-smoke-2026-09-22.json` (in the repository handoff allowlist). This is **not** a fresh walk or a browser/device capture.
 
-| Case | `step_index` | Expected | HTTP | `matched` | Correct | API ms |
-|---|---|---|---|---|---|---|
-| origin | -1 | true | 200 | true | yes | 2317 |
-| office | 0 | true | 200 | false | **no** | 2321 |
-| toilet | 1 | true | 200 | true | yes | 2474 |
-| office is not origin | -1 | false | 200 | false | yes | 2411 |
-| toilet is not office | 0 | false | 200 | false | yes | 2333 |
-| origin is not toilet | 1 | false | 200 | false | yes | 2397 |
+| Case | Video second | `step_index` | Expected | HTTP | `matched` | Correct | API ms |
+|---|---|---|---|---|---|---|---|
+| origin | 12.0 | -1 | true | 200 | true | yes | 3553 |
+| office | 20.75 | 0 | true | 200 | true | yes | 2934 |
+| toilet | 25.5 | 1 | true | 200 | true | yes | 3100 |
+| office is not origin | 20.75 | -1 | false | 200 | false | yes | 3127 |
+| toilet is not office | 25.5 | 0 | false | 200 | false | yes | 2755 |
+| origin is not toilet | 12.0 | 1 | false | 200 | false | yes | 2674 |
+| office, further away | 20.25 | 0 | true | 200 | false | **no** | 2954 |
+| office, further away | 20.5 | 0 | true | 200 | false | **no** | 2658 |
+| office, close | 21.0 | 0 | true | 200 | true | yes | 3457 |
+| office sign out of view | 22.5 | 0 | false | 200 | false | yes | 3163 |
 
-Six real requests: 6/6 HTTP 200, **5/6 correct**, p50 API latency **2.365 s**, no timeouts; all three negatives were rejected (no false positives). The one miss is the **office** landmark against `lift-20.jpg`: `data/runtime/deepseek-office-diagnostic-2026-09-22.json` shows `text_readable=false` on the ≤640 px frame; the model's `observed_features` describe a sign with small, unreadable text and a large gray square obscuring the center of the frame (it does not state whether the sign sits behind that square). That is a **false negative on old footage**, not an infrastructure failure, and the evidence guard correctly refused to match unreadable text.
+Ten real requests: 10/10 HTTP 200, the six core cases **6/6 correct**, 8/10 overall, **no false positives**, p50 API latency **3.03 s**, no timeouts. The two misses are the office sign filmed from further back: at 640 px the words "Office for Research" are too small to read, and the evidence guard correctly refuses unreadable text. From 20.75 s, when the sign fills the left side of the frame, the office checkpoint matches.
 
 Honest limits for the demo:
-- The 2.365 s is **single-request API time**, not three-frame origin latency or end-to-end click-to-result time.
-- The office checkpoint needs a **closer, clearer camera frame**; a complete AI-verified route on a real device has not been rehearsed. Do not present "100%" or "ready" for a full real route.
+- The 3.03 s is **single-request API time** measured around the in-process call, not three-frame origin latency or end-to-end click-to-result time.
+- The user has to stop **close to the office sign**; a complete AI-verified route on a real device has not been rehearsed. Do not present "100%" or "ready" for a full real route.
 - If a walkthrough uses the override button, the deck/video must label it a **manual override**, not an AI match.
 - `npm run test:real` mocks `/replay`, so it does not prove live AI.
+
+## 1d. Re-run on the Windows laptop after the capture change (22/09/2026, `main` @ `a4c2bef` + working tree)
+
+The web capture now sends the ≤640 px JPEG straight from the camera frame; the teach pipeline sends its ≤640 px keyframes as extracted, and `navigation.evaluate` resizes each image to the same ≤640 px JPEG quality 85 as the web app before calling the provider.
+
+| Check | Command | Actual result |
+|---|---|---|
+| Backend | `cd apps/server && uv run python -m pytest -q` | **50 passed** |
+| Backend lint | `uv run ruff check navigation tests` | **All checks passed** |
+| Frontend unit | `cd apps/web && npm test` | **8 passed** |
+| Frontend build | `npm run build` | pass, PWA `generateSW`, 11 precache entries (259.78 KiB) |
+| Mock E2E | `npm run test:e2e` | Chromium **5/5 passed**; WebKit 5 skipped (Windows WebKit has no `MediaStream`) |
+| Real-build E2E | `npm run test:real` | Chromium **2/2 passed**; WebKit **1 passed, 1 skipped**; `/replay` mocked |
 
 ## 2. Published route (read from `data/runtime/routes/lift-lobby-to-toilet-v1/`)
 

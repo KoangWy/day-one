@@ -16,7 +16,6 @@ Xây prototype chạy trên **iPhone**, kiểm thử accessibility trên **Windo
 | Nhận diện landmark | Gemini `gemini-2.5-flash`, SDK `google-genai`, request/response với structured output |
 | Xử lý video | FFmpeg lấy keyframe khoảng 1 fps |
 | Transcript teach | `faster-whisper`, model `base.en`, chạy CPU; cho phép sửa transcript |
-| Che mặt | MediaPipe Face Detector + làm mờ vùng mặt; chạy tại thiết bị trước khi gửi ảnh |
 | Giọng đọc | Edge-TTS tạo sẵn MP3; giọng `en-US-AriaNeural` |
 | Lưu trữ | JSON và audio trên laptop; không cần database |
 | Kiểm thử | pytest, Vitest, Playwright + axe; Safari/VoiceOver và NVDA kiểm tra trực tiếp |
@@ -28,7 +27,6 @@ Các nguồn tham khảo và cách sử dụng:
 - [OCCAM Lab Clew](https://github.com/occamLab/Clew): tham khảo luồng ghi tuyến và đi lại tuyến. Repo dùng Swift/ARKit; giữ đúng spec “ideas only”, không sao chép code.
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper): dùng trực tiếp cho transcript có timestamp.
 - [edge-tts](https://github.com/rany2/edge-tts): dùng trực tiếp, tạo audio trước demo vì tổng hợp giọng nói cần mạng.
-- [MediaPipe Face Detector](https://developers.google.com/edge/mediapipe/solutions/vision/face_detector/web_js): dùng cho pipeline che mặt trên trình duyệt.
 
 Chọn PWA theo spec để dùng chung giao diện iPhone và Windows. Không thêm native app, vector database, agent framework, streaming hoặc obstacle detection.
 
@@ -77,7 +75,7 @@ Quy ước bổ sung cho `/replay`:
 
 1. Quay một tuyến ngắn có 4–5 landmark phân biệt được bằng chữ; người dẫn nói rõ hướng và checkpoint bằng tiếng Anh.
 2. Import MP4 trên laptop. FFmpeg lấy frame khoảng 1 fps, faster-whisper tạo transcript có timestamp.
-3. Che mặt trên laptop trước khi gửi keyframe sang VLM. Transcript và frame được nhóm theo thời gian để tạo route nháp.
+3. Gửi keyframe sang VLM. Transcript và frame được nhóm theo thời gian để tạo route nháp.
 4. Người phụ trách duyệt lại thứ tự, hướng trái/phải, chữ trên biển và lời dẫn. Không suy diễn `voice_cue` từ hình ảnh.
 5. Lệnh chuẩn bị route kiểm tra đủ 4–5 step, tạo metadata và toàn bộ audio, rồi mới công bố route qua `/routes`.
 6. Xuất log teach có timestamp để dựng recap 20 giây; ghi rõ đây là xử lý video đã quay.
@@ -93,7 +91,7 @@ Luồng chính:
 **Origin**
 
 - Nút Start xin camera và kích hoạt audio.
-- Chụp ba frame cách nhau khoảng một giây; che mặt trên iPhone trước khi gửi.
+- Chụp ba frame cách nhau khoảng một giây, thu cạnh dài về ≤640 px trước khi gửi.
 - Gọi `/replay` với `step_index=-1` cho từng frame. Ít nhất hai frame khớp mới hiển thị câu hỏi xác nhận office.
 - Chỉ bắt đầu s1 sau câu trả lời Yes. No/unsure hoặc thiếu bằng chứng: cho chụp lại, hiển thị “I only know the office route”; không cho bỏ qua origin bằng Next.
 
@@ -126,9 +124,9 @@ Luồng chính:
 
 ### D. Privacy và phạm vi tuyên bố
 
-Replay chỉ gửi snapshot theo thao tác người dùng; không upload camera liên tục. Model che mặt được phục vụ cục bộ; nếu model không tải được thì chặn upload ảnh. Không lưu ảnh replay hoặc ghi ảnh/base64 vào log.
+Replay chỉ gửi snapshot theo thao tác người dùng; không upload camera liên tục. Không lưu ảnh replay hoặc ghi ảnh/base64 vào log.
 
-Consent nói rõ ảnh đã làm mờ được gửi tới nhà cung cấp VLM; face detection vẫn có thể bỏ sót. Quay ở khu vực được đồng ý, tránh người ngoài và thông tin nhạy cảm. Không tuyên bố cloud provider “không lưu dữ liệu” khi chưa xác minh chính sách.
+Consent nói rõ ảnh được gửi tới nhà cung cấp VLM. Quay ở khu vực được đồng ý, tránh người ngoài và thông tin nhạy cảm. Không tuyên bố cloud provider “không lưu dữ liệu” khi chưa xác minh chính sách.
 
 ## 4. Phân công, thứ tự và mốc bàn giao
 
@@ -155,7 +153,7 @@ Dependency phải xác minh ngay đầu phiên: Safari dùng được HTTPS/came
 - Origin: đúng office, sai vị trí, ảnh mờ, chỉ một trong ba frame khớp, người dùng trả lời No; mọi trường hợp chưa xác nhận đều không phát hướng dẫn s1.
 - Checkpoint: đúng biển, sai biển, cảnh tương tự, JSON VLM lỗi, timeout; không có trường hợp AI tự tăng step.
 - UI: double-click Yes, response đến muộn, Repeat, manual override, Stop, reload và đưa app xuống nền.
-- Privacy: xác nhận ảnh được làm mờ trước upload và không nằm trong cache/log.
+- Privacy: xác nhận ảnh replay không nằm trong cache/log.
 
 Dùng pytest kiểm tra API và xử lý lỗi; Vitest kiểm tra chuyển trạng thái; Playwright kiểm tra hành trình bằng bàn phím và tích hợp API giả lập. Ghi rõ bài kiểm thử dùng mock; chạy kiểm chứng VLM riêng bằng ảnh thật.
 
