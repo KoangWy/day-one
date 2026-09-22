@@ -49,3 +49,4 @@ data/runtime/routes/lift-lobby-to-toilet-v2/*
 !data/runtime/routes/lift-lobby-to-toilet-v2/audio/
 !data/runtime/routes/lift-lobby-to-toilet-v2/audio/*.mp3
 !data/runtime/deepseek-route-smoke-2026-09-22.json
+!data/runtime/deepseek-observe-eval-2026-09-22.json
