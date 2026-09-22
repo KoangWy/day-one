@@ -341,7 +341,8 @@ export default function App() {
           <p className="hint">Turn app voice off to listen with your screen reader.</p>
           {blockedAudio && voice && <div role="status"><p>Audio is paused or unavailable. You can read the instruction above.</p><button className="secondary" onClick={() => void play()}>Play instruction</button></div>}
           <audio ref={audio} preload="none" onPlay={() => { setSpeaking(true); recognition.current?.abort() }} onPause={() => setSpeaking(false)} onEnded={() => setSpeaking(false)} onError={() => { if (voiceRef.current && cue) setBlockedAudio(true) }} />
-          <video ref={video} className={active || starting ? 'camera-preview' : 'camera-preview camera-hidden'} muted playsInline aria-label="Rear camera preview; no continuous upload" />
+          {/* Fixed-size frame: iOS Safari mis-sizes camera video whose box depends on the stream's own dimensions. */}
+          <div className="camera-frame" hidden={!active && !starting}><video ref={video} muted playsInline aria-label="Rear camera preview; no continuous upload" /></div>
           {active && <details className="commands"><summary>Voice and typed commands</summary><p>Say or type yes, no, repeat, next, or stop. Voice recognition may send audio to your browser’s speech service.</p>
             {speechConstructor() ? <button className="secondary" disabled={speaking || listening} onClick={listen}>{listening ? 'Listening…' : 'Press to speak one command'}</button> : <p>Voice recognition is unavailable in this browser. Use the buttons or type a command.</p>}
             <form onSubmit={e => { e.preventDefault(); execute(command) }}><label htmlFor="command">Type a command</label><div className="command-row"><input id="command" value={command} onChange={e => setCommand(e.target.value)} autoComplete="off" /><button className="secondary" type="submit">Send command</button></div></form><p role="status">{commandNotice}</p>
