@@ -1,26 +1,28 @@
+> **English** (default) | [Tiếng Việt](./DEMO_HANDOFF.vi.md)
+
 # Demo handoff — run checklist, field test, deck/video
 
 Internal note. Single demo route: `lift-lobby-to-toilet-v1` (Lift lobby → Toilet, 2 checkpoints). All UI, directions, and audio are in English. Demo provider selected on 22/09/2026: **OpenCode Go / DeepSeek V4.1 Flash**; set `VLM_PROVIDER=opencode`, `OPENCODE_MODEL=deepseek-v4.1-flash` in the local `.env` and restart the server. The idle-screen consent must name DeepSeek.
 
 **Measured AI status (22/09/2026).** Real `/replay` on frames of the reviewed route video `IMG_7546.MOV`, sent exactly as the web app captures them (longest edge ≤640 px, JPEG quality 85): 10/10 HTTP 200, the six core cases (origin, office, toilet and three cross-checks) **6/6 correct**, **no false positives**, p50 API about **3.0 s**, no timeouts (`data/runtime/deepseek-route-smoke-2026-09-22.json`). The office sign must fill enough of the frame: from about 20.75 s onward it matches, from further away (20.25 s, 20.5 s) the text is too small and it is correctly refused. This is a frame smoke test, not a completed walk: before filming a fully AI-verified route, rehearse on a real device and stop close to the office sign; any override-button use in the video must be labeled a **manual override**. Details: `docs/PROTOTYPE_VERIFICATION.md` §1c.
 
-## Video nguồn
+## Source video
 
-- [Thư mục Google Drive chứa video nguồn](https://drive.google.com/drive/u/0/folders/1JMS3SMx0U5kOF_lFNu6eB4SwSjnMFs7w) — người dùng cung cấp trong session triển khai Tier A; khôi phục link vào repo ngày 22/09/2026.
-- Bản tải về và frame trích xuất trên máy: `data/runtime/source-media/` (bị Git bỏ qua).
-- Đây là nguồn video phục vụ prototype; trạng thái video thuyết trình cuối cùng được theo dõi riêng ở checklist bài nộp bên dưới.
+- [Google Drive folder with source videos](https://drive.google.com/drive/u/0/folders/1JMS3SMx0U5kOF_lFNu6eB4SwSjnMFs7w) — provided by the user in the Tier A build session; link restored into the repo on 22/09/2026.
+- Local download and extracted frames on this machine: `data/runtime/source-media/` (ignored by Git).
+- This is the prototype's video source; the final presentation video status is tracked separately in the submission checklist below.
 
-## Dữ liệu demo đi cùng repo
+## Demo data shipped with the repo
 
-Theo yêu cầu bàn giao ngày 22/09/2026, `.gitignore` cho phép đúng các file sau để commit/push cùng code:
+Per the 22/09/2026 handoff request, `.gitignore` allows exactly these files to be committed/pushed with the code:
 
-- `data/runtime/routes/lift-lobby-to-toilet-v1/route.json` và `published.json`: nội dung đã duyệt, metadata và mapping audio.
-- 11 MP3 tổng hợp Edge-TTS trong `data/runtime/routes/lift-lobby-to-toilet-v1/audio/`.
-- `data/runtime/deepseek-route-smoke-2026-09-22.json`: số đo và kết quả nhận diện, không chứa ảnh/base64 hoặc credential.
+- `data/runtime/routes/lift-lobby-to-toilet-v1/route.json` and `published.json`: reviewed content, metadata and audio mapping.
+- 11 Edge-TTS MP3s in `data/runtime/routes/lift-lobby-to-toilet-v1/audio/`.
+- `data/runtime/deepseek-route-smoke-2026-09-22.json`: measurements and recognition results, no images/base64 or credentials.
 
-Tổng cộng 14 file, khoảng 0,52 MB. Sau khi các file được commit/push, teammate clone/pull sẽ có sẵn tuyến và evidence; không cần gửi riêng hoặc gọi lại TTS/VLM để tái tạo chúng. `.env` vẫn gửi riêng. Dùng `DATA_DIR` mặc định để app đọc tuyến trong repo; nếu cấu hình thư mục khác, cần chép tuyến vào `<DATA_DIR>/routes/`.
+14 files total, about 0.52 MB. After these files are committed/pushed, a teammate's clone/pull already contains the route and evidence; no separate transfer or TTS/VLM rerun is needed to recreate them. `.env` is still shared separately. Use the default `DATA_DIR` so the app reads the in-repo route; with a different folder configured, copy the route into `<DATA_DIR>/routes/`.
 
-Video/frame nguồn, draft, log runtime, kết quả thử mới, route khác và MP3 ngoài danh sách vẫn bị Git bỏ qua. Trên máy mới vẫn build frontend; tạo chứng chỉ HTTPS theo IP máy mới nếu dùng iPhone.
+Source videos/frames, drafts, runtime logs, new test results, other routes and off-list MP3s stay Git-ignored. A fresh machine still builds the frontend; create HTTPS certificates for the new machine IP when using an iPhone.
 
 ## 1. Run the demo on the laptop (backend + frontend + build verified)
 

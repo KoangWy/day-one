@@ -1,3 +1,5 @@
+> **English** (default) | [Tiếng Việt](./PROTOTYPE_VERIFICATION.vi.md)
+
 # Prototype verification — test results and known limits
 
 Internal note. Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE. Added 22/09/2026: §1c records the real DeepSeek `/replay` smoke on frames of the reviewed route video; §1d records the Windows re-run after the capture change. Canonical backend command is now `uv run python -m pytest -q` (the plain `uv run pytest -q` launcher errored on this machine).

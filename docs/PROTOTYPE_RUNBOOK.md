@@ -1,16 +1,18 @@
-# Day One — vận hành prototype
+> **English** (default) | [Tiếng Việt](./PROTOTYPE_RUNBOOK.vi.md)
 
-Tài liệu nội bộ. UI, chỉ đường và audio đều bằng tiếng Anh. Quyết định cập nhật ngày 21/09/2026: người dùng chọn **Lift lobby → Toilet**, 2–3 checkpoint, cho phép nhận diện pictogram với đặc điểm vật lý; route đã duyệt hiện có 2 checkpoint. Đây là ngoại lệ được duyệt cho yêu cầu 4–5 mốc có chữ trong kế hoạch ban đầu. Không sửa schema route.
+# Day One — prototype operations
 
-## Cấu hình và khởi động
+Internal note. UI, directions and audio are all in English. Updated decision on 21/09/2026: the user chose **Lift lobby → Toilet**, 2–3 checkpoints, allowing pictogram recognition with physical features; the reviewed route currently has 2 checkpoints. This is an approved exception to the original 4–5 text-sign requirement. The route schema is unchanged.
 
-Cần Node 22+, `uv`, Python 3.11 do uv quản lý, FFmpeg. Cài `uv sync --all-extras --frozen` trong `apps/server`, `npm ci` trong `apps/web` rồi build frontend. Dependency được pin trong `uv.lock` và `package-lock.json`.
+## Setup and startup
 
-**Laptop Windows** (đã chạy thử 21/09/2026, Git Bash): cài uv bằng `py -m pip install --user uv` rồi thêm `%APPDATA%\Python\Python313\Scripts` vào PATH (hoặc `winget install astral-sh.uv`). `python3` trên Windows thường là alias Microsoft Store — gọi script Python bằng `uv run --project apps/server python ...`. npm 11+ chặn `postinstall` của esbuild; không cần duyệt vì binary `@esbuild/win32-x64` vẫn chạy. Mọi file JSON/transcript được đọc/ghi UTF-8 tường minh nên review có dấu `’`/tiếng Việt không bị lỗi trên locale cp1252. FFmpeg chỉ cần cho teach: `winget install Gyan.FFmpeg`.
+Requires Node 22+, `uv`, uv-managed Python 3.11, FFmpeg. Run `uv sync --all-extras --frozen` in `apps/server`, `npm ci` in `apps/web`, then build the frontend. Dependencies are pinned in `uv.lock` and `package-lock.json`.
 
-Sao chép `.env.example` thành `.env` nếu chưa có. Không ghi đè `.env` hiện hữu. Không paste key vào frontend hoặc lệnh curl có thể bị lưu trong history.
+**Windows laptop** (tested 21/09/2026, Git Bash): install uv with `py -m pip install --user uv`, then add `%APPDATA%\Python\Python313\Scripts` to PATH (or `winget install astral-sh.uv`). `python3` on Windows is usually a Microsoft Store alias — invoke Python scripts with `uv run --project apps/server python ...`. npm 11+ blocks the esbuild `postinstall`; no approval needed because the `@esbuild/win32-x64` binary still runs. All JSON/transcript files are read/written as explicit UTF-8, so reviews containing `’`/Vietnamese survive a cp1252 locale. FFmpeg is only needed for teach: `winget install Gyan.FFmpeg`.
 
-Provider demo đã chốt ngày 22/09/2026: **DeepSeek V4.1 Flash qua OpenCode Go**, phục vụ quay video/thuyết trình.
+Copy `.env.example` to `.env` when missing. Never overwrite an existing `.env`. Never paste keys into the frontend or into curl commands that may be saved in shell history.
+
+Locked demo provider on 22/09/2026: **DeepSeek V4.1 Flash via OpenCode Go**, for video/presentation recording.
 
 ```dotenv
 VLM_PROVIDER=opencode
@@ -18,100 +20,100 @@ OPENCODE_MODEL=deepseek-v4.1-flash
 OPENCODE_API_KEY=...
 ```
 
-DeepSeek dùng Chat Completions với `response_format=json_object`, schema trong prompt và thinking tắt; backend vẫn kiểm tra kiểu dữ liệu/ngữ nghĩa bằng Pydantic trước khi dùng kết quả. MiMo giữ nhánh `json_schema` nếu được chọn thủ công. Không đổi sang Muse Spark trong biến này vì Muse dùng Responses API. UI lấy tên provider/model từ `/health` để hiển thị consent đúng; không tự đổi model/provider khi lỗi. Restart server sau khi đổi `.env`.
+DeepSeek uses Chat Completions with `response_format=json_object`, the schema in the prompt and thinking disabled; the backend still validates types/semantics with Pydantic before using results. MiMo keeps the `json_schema` branch when selected manually. Do not switch to Muse Spark in this variable because Muse uses the Responses API. The UI reads provider/model names from `/health` for correct consent display; it never auto-switches model/provider on error. Restart the server after changing `.env`.
 
-Adapter Gemini Developer API vẫn có sẵn khi cấu hình thủ công `VLM_PROVIDER=gemini`, `VLM_MODEL` và `GEMINI_API_KEY`; không cần cấu hình Vertex AI cho demo hiện tại.
+The Gemini Developer API adapter is still available via manual `VLM_PROVIDER=gemini`, `VLM_MODEL` and `GEMINI_API_KEY`; no Vertex AI configuration is needed for the current demo.
 
 ```bash
 bash scripts/serve.sh
 ```
 
-Server phục vụ bản build, API và audio cùng origin ở `http://127.0.0.1:8000`. Dev frontend riêng: `npm run dev` trong `apps/web`, proxy API tới server 8000. `/health` chỉ báo key có được cấu hình, **không chứng minh key còn hiệu lực/quota**. Không bật access log, debug request body hoặc proxy ghi body.
+The server serves the build, API and audio from one origin at `http://127.0.0.1:8000`. Separate frontend dev: `npm run dev` in `apps/web`, proxying the API to server port 8000. `/health` only reports whether a key is configured, **not whether the key is valid or has quota**. No access log, debug request body, or body-logging proxy.
 
-Tuyến demo đã publish, 11 MP3 và JSON kết quả DeepSeek được chia sẻ cùng repo theo [mục bàn giao dữ liệu demo](DEMO_HANDOFF.md#dữ-liệu-demo-đi-cùng-repo). Sau clone/pull không cần chạy `prepare` nếu `data/runtime/routes/lift-lobby-to-toilet-v1/` đã có; vẫn phải build frontend. Nếu `.env` có `DATA_DIR` riêng, bỏ cấu hình đó để dùng dữ liệu đi kèm hoặc chép tuyến vào `<DATA_DIR>/routes/`.
+The published demo route, 11 MP3s and DeepSeek result JSON ship with the repo per [demo data shipped with the repo](DEMO_HANDOFF.md#demo-data-shipped-with-the-repo). After clone/pull, skip `prepare` when `data/runtime/routes/lift-lobby-to-toilet-v1/` already exists; the frontend must still be built. When `.env` has a custom `DATA_DIR`, drop that setting to use the bundled data, or copy the route into `<DATA_DIR>/routes/`.
 
-## HTTPS cho iPhone/Windows cùng LAN
+## HTTPS for iPhone/Windows on the same LAN
 
 ```bash
 brew install mkcert                 # macOS; Windows: winget install FiloSottile.mkcert
-bash scripts/setup_https.sh 192.168.0.143  # thay bằng IP LAN hiện tại của laptop
+bash scripts/setup_https.sh 192.168.0.143  # replace with the laptop's current LAN IP
 bash scripts/serve.sh --https
 ```
 
-Laptop Windows: lần đầu chạy `--https`, Windows Defender Firewall hỏi cho phép Python — chỉ chọn **Private networks**, người dùng tự bấm. Không thì iPhone/máy NVDA không kết nối được cổng 8443.
+Windows laptop: on the first `--https` run, Windows Defender Firewall asks to allow Python — select **Private networks** only; the user clicks it. Otherwise the iPhone/NVDA machine cannot reach port 8443.
 
-Server HTTPS ở `https://<IP-LAN>:8443`. Script tạo chứng chỉ nhưng không tự thay đổi trust store. Xem thư mục CA bằng `mkcert -CAROOT`.
+The HTTPS server is at `https://<LAN-IP>:8443`. The script creates certificates but never touches the trust store itself. Show the CA folder with `mkcert -CAROOT`.
 
-1. Cài CA trên laptop nếu muốn trình duyệt local tin cậy: `mkcert -install` (hệ điều hành có thể yêu cầu quyền admin).
-2. Chỉ chuyển **rootCA.pem** sang iPhone/Windows. Không chuyển `rootCA-key.pem` hay `.certs/lan-key.pem`.
-3. iPhone: cài profile chứng chỉ, sau đó bật full trust trong Settings → General → About → Certificate Trust Settings. Mở URL HTTPS trong Safari, cấp camera; thử cả Add to Home Screen.
-4. Windows: import CA vào Trusted Root Certification Authorities của tài khoản demo, mở URL HTTPS và chạy NVDA thật.
-5. Nếu IP laptop đổi, tạo lại chứng chỉ cho IP mới. Dùng mạng riêng của team. Chạy Uvicorn với `--no-proxy-headers`: ingest kiểm tra địa chỉ socket loopback, không tin `X-Forwarded-For`.
+1. Install the CA on the laptop for a trusted local browser: `mkcert -install` (the OS may ask for admin rights).
+2. Transfer only **rootCA.pem** to the iPhone/Windows machine. Never transfer `rootCA-key.pem` or `.certs/lan-key.pem`.
+3. iPhone: install the certificate profile, then enable full trust in Settings → General → About → Certificate Trust Settings. Open the HTTPS URL in Safari, grant camera; also try Add to Home Screen.
+4. Windows: import the CA into the demo account's Trusted Root Certification Authorities, open the HTTPS URL and run real NVDA.
+5. When the laptop IP changes, recreate certificates for the new IP. Use the team's private network. Run Uvicorn with `--no-proxy-headers`: ingest checks the loopback socket address and does not trust `X-Forwarded-For`.
 
-Camera cần secure context theo [MDN](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia). Cách trust CA trên thiết bị theo [mkcert](https://github.com/FiloSottile/mkcert). Kiểm thử WebKit tự động không thay thế Safari/VoiceOver trên iPhone thật.
+Camera needs a secure context per [MDN](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia). Device CA-trust steps follow [mkcert](https://github.com/FiloSottile/mkcert). Automated WebKit tests do not replace a real iPhone with Safari/VoiceOver.
 
-## Teach và duyệt
+## Teach and review
 
-`POST /ingest-video` chỉ nhận từ laptop qua loopback. Multipart gồm `video` MP4, `route_id`, `transcript` tùy chọn. Tối đa 120 MB/180 giây. Raw MOV từ iPhone cần chuyển thành MP4 trước; không sửa/xóa bản gốc của người dùng:
+`POST /ingest-video` accepts loopback calls from the laptop only. Multipart fields: `video` MP4, `route_id`, optional `transcript`. Limits: 120 MB / 180 seconds. Raw MOV from iPhone must be converted to MP4 first; never edit/delete the user's original:
 
 ```bash
 ffmpeg -i input.MOV -map 0:v:0 -map '0:a:0?' -c:v libx264 -crf 23 -c:a aac output.mp4
 ```
 
-Có thể dùng CLI local thay cho HTTP:
+A local CLI can replace HTTP:
 
 ```bash
 cd apps/server
 uv run python -m navigation.teach_cli /absolute/path/output.mp4 --route-id lift-to-toilet-v2
-# Có transcript chỉnh tay:
+# With a hand-edited transcript:
 uv run python -m navigation.teach_cli /absolute/path/output.mp4 \
   --route-id lift-to-toilet-v3 --transcript /absolute/path/transcript.json
 ```
 
-Transcript nhận text hoặc JSON `[{"start":0,"end":8,"text":"..."}]`, giây tính từ đầu video/clip nhập. Frame khoảng 1 fps, cạnh dài 640. `faster-whisper base.en` chạy CPU; model tải lần đầu cần mạng. Keyframe được gửi nguyên cho provider. Transcript tự động có thể sai, nhất là tiếng vang/khẩu âm; reviewer phải sửa. `voice_cue` không có trích dẫn khớp transcript bị xóa.
+Transcript accepts text or JSON `[{"start":0,"end":8,"text":"..."}]`, seconds counted from the start of the input video/clip. Frames at ~1 fps, long edge 640. `faster-whisper base.en` runs on CPU; the model download needs network on first run. Keyframes are sent to the provider unchanged. Auto transcripts can be wrong, especially with echo/accents; the reviewer must fix them. A `voice_cue` with no matching transcript quote is deleted.
 
-Kết quả nằm trong `data/runtime/drafts/<route-id>/`:
+Results land in `data/runtime/drafts/<route-id>/`:
 
-- `route.json`: đúng schema `{route_id, steps[{id,instruction,landmark,voice_cue}]}`.
-- `review.json`: sửa origin, `required_text`, `required_features`, câu hỏi, arrival; xác nhận `destination_is_exterior`.
-- `transcript.json`: kiểm tra timestamp và lời nói.
-- `teach-log.json`: timestamp dựng recap; ghi rõ pre-recorded.
+- `route.json`: matches the schema `{route_id, steps[{id,instruction,landmark,voice_cue}]}`.
+- `review.json`: fix origin, `required_text`, `required_features`, questions, arrival; confirm `destination_is_exterior`.
+- `transcript.json`: check timestamps and speech.
+- `teach-log.json`: build-timestamp recap; marked pre-recorded.
 
-Reviewer kiểm tra thứ tự, hướng trái/phải, biển tầng, dấu hiệu cố định, câu trích và điểm kết thúc ngoài toilet. `instruction` luôn đi từ điểm xác nhận trước tới landmark của **step hiện tại**. Sau khi duyệt:
+The reviewer checks order, left/right turns, floor signs, fixed landmarks, quotes and the outside-toilet endpoint. `instruction` always goes from the previous confirmed point to the landmark of the **current step**. After approval:
 
 ```bash
 uv run python -m navigation.prepare ../../data/runtime/drafts/lift-to-toilet-v2 \
-  --reviewer "Tên người duyệt" --reviewed
+  --reviewer "Reviewer name" --reviewed
 ```
 
-Prepare tạo sẵn Edge-TTS `en-US-AriaNeural`; chỉ công bố bằng rename atomic sau khi có đủ MP3. Không ghi đè version đã công bố. TTS thất bại không xuất hiện route dở dang. Khi publish một runtime draft, xóa transcript/draft tạm; giữ route, metadata, audio và timing log. Video/audio/frame tạm của ingest được xóa cả khi lỗi. Những file nguồn do người dùng cung cấp và bản tải Drive phục vụ review không bị ingest tự xóa; sau review có thể tự xóa `data/runtime/source-media/`.
+Prepare prebuilds Edge-TTS `en-US-AriaNeural`; it publishes via atomic rename only after all MP3s exist. It never overwrites a published version. A failed TTS never leaves a half-published route. When publishing a runtime draft, delete temp transcripts/drafts; keep the route, metadata, audio and timing log. Ingest temp video/audio/frames are deleted even on error. User-supplied source files and Drive downloads used for review are never auto-deleted by ingest; after review you may delete `data/runtime/source-media/` yourself.
 
-Teach “offline” nghĩa là chuẩn bị trước replay: VLM và Edge-TTS vẫn cần mạng. [faster-whisper](https://github.com/SYSTRAN/faster-whisper), [Edge-TTS](https://github.com/rany2/edge-tts).
+"Offline" teach means pre-walk replay preparation: VLM and Edge-TTS still need network. [faster-whisper](https://github.com/SYSTRAN/faster-whisper), [Edge-TTS](https://github.com/rany2/edge-tts).
 
 ## Replay
 
-- Start xin camera và kích hoạt một audio element.
-- Check starting point chụp 3 ảnh cách khoảng 1 giây, gửi từng request; ít nhất 2 ảnh khớp và người dùng Yes mới bắt đầu s1. Không có Next tại origin.
-- Check checkpoint gửi một JPEG (cạnh dài ≤640 px); Yes mới tăng bước. Backend luôn lấy instruction từ route đã duyệt. Hai non-match liên tiếp mở fallback; Next còn cần Yes riêng và được đếm manual override.
-- Mỗi request provider có deadline server 10 giây; 503 khác với ảnh không khớp. Không retry ẩn. Repeat chỉ phát MP3.
-- Stop/arrival dừng camera. Reload hoặc app xuống nền reset về origin. Không có định vị offline, obstacle detection hoặc chỉ đường do AI sinh trong replay.
-- App voice có thể tắt để nghe screen reader; nếu Safari chặn audio, nút Play instruction hiện ra. Voice command có disclosure, push-to-talk và typed/button fallback; không bật mic khi app voice đang phát. [WebKit](https://webkit.org/blog/6784/new-video-policies-for-ios/), [SpeechRecognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
+- Start requests the camera and unlocks one audio element.
+- Starting-point check captures 3 photos ~1 second apart, sending one request each; at least 2 must match plus user Yes before s1 starts. No Next at origin.
+- Checkpoint check sends one JPEG (long edge ≤640 px); Yes advances the step. The backend always reads the instruction from the reviewed route. Two consecutive non-matches open fallback; Next still needs its own Yes and counts as a manual override.
+- Every provider request has a 10-second server deadline; 503 is different from image mismatch. No hidden retries. Repeat only replays the MP3.
+- Stop/arrival stops the camera. Reload or backgrounding the app resets to origin. No offline localization, obstacle detection, or AI-generated directions during replay.
+- App voice can be muted to hear the screen reader; when Safari blocks audio, a Play instruction button appears. Voice command has a disclosure, push-to-talk and typed/button fallback; the mic never opens while app voice is playing. [WebKit](https://webkit.org/blog/6784/new-video-policies-for-ios/), [SpeechRecognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
 
-`/replay`: `{route_id,step_index,image_jpeg_640}` → `{matched,instruction,checkpoint_question,audio_url}`. Index origin là `-1`. 404: route chưa công bố; 422: payload/index/JPEG sai; 503: provider/timeout. Response lỗi không echo base64. Không lưu ảnh replay. Service worker chỉ precache app shell, không cache API, ảnh hoặc audio.
+`/replay`: `{route_id,step_index,image_jpeg_640}` → `{matched,instruction,checkpoint_question,audio_url}`. Origin index is `-1`. 404: route not published; 422: bad payload/index/JPEG; 503: provider/timeout. Error responses never echo base64. Replay images are never stored. The service worker precaches the app shell only, never API, images or audio.
 
-## Model và chi phí đã khảo sát
+## Surveyed models and costs
 
-**Cập nhật 22/09/2026:** dùng `deepseek-v4.1-flash` qua OpenCode Go theo lựa chọn của người dùng. Giữ deadline replay 10 giây ở server/12 giây ở browser; kết quả test với provider thật được ghi trong `docs/PROTOTYPE_VERIFICATION.md`. [DeepSeek JSON Output](https://api-docs.deepseek.com/guides/json_mode/) dùng `json_object`, nên không chỉ đổi tên model trong adapter MiMo cũ. Kết quả cuối luôn qua kiểm tra schema/bằng chứng và chờ người dùng xác nhận.
+**Updated 22/09/2026:** uses `deepseek-v4.1-flash` via OpenCode Go per the user's choice. Keep the replay deadline at 10 s server / 12 s browser; real-provider test results are recorded in `docs/PROTOTYPE_VERIFICATION.md`. [DeepSeek JSON Output](https://api-docs.deepseek.com/guides/json_mode/) uses `json_object`, so the model cannot be renamed inside the old MiMo adapter. Final results always pass schema/evidence checks and wait for user confirmation.
 
-Khảo sát trước khi chuyển sang DeepSeek:
+Surveyed before switching to DeepSeek:
 
-[OpenCode Go](https://opencode.ai/docs/go/) ngày 21/09/2026 niêm yết MiMo V2.5 $0.14 input/$0.28 output, Muse Spark 1.3 Contributor $0.10/$0.20 trên 1M token. `/models` trả MiMo V2.5, không thấy MiMo v3. V2.5 đọc ảnh/JSON được trong probe nhỏ, nhưng latency chưa đạt mục tiêu. Go hướng tới coding-agent traffic; không coi quyền dùng demo là bảo đảm dịch vụ cho sản phẩm. Muse Contributor cho phép sử dụng prompts/completions để huấn luyện, nên không được tự thay vào consent MiMo. Các probe Muse trong phiên chỉ dùng ảnh chữ tổng hợp.
+[OpenCode Go](https://opencode.ai/docs/go/) on 21/09/2026 listed MiMo V2.5 at $0.14 input / $0.28 output and Muse Spark 1.3 Contributor at $0.10 / $0.20 per 1M tokens. `/models` returned MiMo V2.5, no MiMo v3 seen. V2.5 read images/JSON in a small probe, but latency missed the target. Go targets coding-agent traffic; demo access is no guarantee of production service. Muse Contributor allows prompts/completions to be used for training, so it must not be swapped into the MiMo consent. Muse probes in-session used synthetic text-sign images only.
 
-[Codex non-interactive](https://learn.chatgpt.com/docs/non-interactive-mode) hỗ trợ ảnh qua CLI và `--output-schema`, tái dùng đăng nhập CLI. Có thể hỗ trợ chuẩn bị/đánh giá demo. Prototype không nhúng agent Codex vào endpoint replay; chưa đo được độ trễ CLI và không lấy token đăng nhập để giả lập một API key.
+[Codex non-interactive](https://learn.chatgpt.com/docs/non-interactive-mode) supports images via CLI plus `--output-schema`, reusing the CLI login. It may support demo prep/evaluation. The prototype does not embed a Codex agent in the replay endpoint; CLI latency was never measured, and login tokens are never harvested to fake an API key.
 
-Gemini dùng SDK và [structured output](https://ai.google.dev/gemini-api/docs/structured-output). Giữ `VLM_MODEL` cấu hình được; thay model cần chạy đánh giá lại. Không tự suy ra chính sách lưu trữ cloud từ việc app không giữ ảnh.
+Gemini uses the SDK and [structured output](https://ai.google.dev/gemini-api/docs/structured-output). `VLM_MODEL` stays configurable; changing models requires re-evaluation. Do not infer cloud retention policy from the app not keeping images.
 
-## Kiểm thử và đo số liệu
+## Testing and metrics
 
 ```bash
 cd apps/server
@@ -124,31 +126,31 @@ npx playwright install chromium webkit
 npm run test:e2e
 ```
 
-E2E dùng camera tổng hợp + API mock. Không đại diện độ chính xác landmark. WebKit của Playwright **trên Windows** không có `MediaStream`, nên 5 hành trình cần camera tự skip (có ghi lý do); chạy trên macOS/Linux để có WebKit đầy đủ.
+E2E uses a synthetic camera + mocked API. It says nothing about landmark accuracy. Playwright WebKit **on Windows** has no `MediaStream`, so 5 camera journeys self-skip with a stated reason; run on macOS/Linux for full WebKit.
 
-Kiểm tra **bản build thật** (server FastAPI thật, `dist` thật, route đã publish và MP3 Edge-TTS thật; chỉ `/replay` được mock nên không cần key): cần `npm run build` và route `lift-lobby-to-toilet-v1` đã publish. Lệnh tự khởi động uvicorn ở cổng 8000 hoặc dùng lại server đang chạy. Kiểm tra mọi MP3, service worker không cache audio/API/model, đi origin → checkpoint → fallback → override → arrival và chạy axe ở từng phase. Đổi route bằng `DEMO_ROUTE_ID=<route-id>`.
+Check the **real build** (real FastAPI server, real `dist`, published route and real Edge-TTS MP3s; only `/replay` is mocked so no key needed): requires `npm run build` and the published `lift-lobby-to-toilet-v1` route. The command auto-starts uvicorn on port 8000 or reuses a running server. It checks every MP3, that the service worker caches no audio/API/model, the origin → checkpoint → fallback → override → arrival walk, and runs axe at each phase. Switch routes with `DEMO_ROUTE_ID=<route-id>`.
 
 ```bash
 cd apps/web
 npm run test:real
 ```
 
-Download session metrics trên UI, rồi:
+Download session metrics in the UI, then:
 
 ```bash
 python3 scripts/metrics.py session1.json session2.json session3.json
 # Windows: uv run --project apps/server python scripts/metrics.py session1.json ...
 ```
 
-Đánh giá VLM thật dùng manifest local với các case `id`, `image`, `expected` và `checkpoint` theo schema metadata; tối thiểu ba ảnh mới mỗi landmark, mười ảnh âm tính và origin đúng/sai. `image` là đường dẫn tương đối từ manifest. Không commit ảnh thật.
+Real-VLM evaluation uses a local manifest with `id`, `image`, `expected` and `checkpoint` cases per the metadata schema; minimum three fresh images per landmark, ten negatives, and true/false origin. `image` is a path relative to the manifest. Never commit real images.
 
 ```bash
 cd apps/server
 uv run python -m navigation.evaluate /private/eval/cases.json --output /private/eval/results.json
 ```
 
-Lệnh này thu ảnh về cạnh dài ≤640 px, JPEG chất lượng 85 như app web, rồi gửi tới provider đang cấu hình, tối đa một call/case. Báo số false positive với mẫu âm tính riêng; giữ timeout/errors trong kết quả. Metrics UI chỉ là số liệu vận hành, không thay ground truth hoặc các lượt đi thực tế.
+This downsizes images to long edge ≤640 px, JPEG quality 85 like the web app, then calls the configured provider, at most one call per case. Report false positives with a separate negative set; keep timeouts/errors in the results. UI metrics are operational numbers only, never a substitute for ground truth or real walks.
 
 ## Credit
 
-Route teach-and-share inspired by [OCCAM Lab Clew](https://github.com/occamLab/Clew); original implementation by Team Offixed. Không sao chép code Clew.
+Route teach-and-share inspired by [OCCAM Lab Clew](https://github.com/occamLab/Clew); original implementation by Team Offixed. No Clew code copied.
