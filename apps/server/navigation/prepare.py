@@ -6,20 +6,10 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-import edge_tts
-
 from .config import DATA
-from .models import Assets, AudioStep, Published, Review, Route
-
-OVERRIDE = "Continue using saved directions without visual verification?"
-
-
-def fallback(last):
-    return f"I lost track, slowly turn left or right. Last confirmed: {last}."
-
-
-async def synthesize(text, path):
-    await edge_tts.Communicate(text, "en-US-AriaNeural").save(str(path))
+from .models import Assets, AssetStep, Published, Review, Route
+from .phrases import build_phrases
+from .speech import synthesize
 
 
 async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
@@ -40,33 +30,17 @@ async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
         audio = stage / "audio"
         audio.mkdir(parents=True)
 
-        async def say(name, text):
-            path = audio / f"{name}.mp3"
+        phrases = build_phrases(route, review)
+        for key, text in phrases.items():
+            path = audio / f"{key}.mp3"
             await tts(text, path)
             if not path.exists() or path.stat().st_size < 100:
                 raise ValueError("Speech generation produced no usable audio")
-            return f"/audio/{route.route_id}_{name}.mp3"
-
-        origin_audio = await say("origin", review.origin.question)
-        origin_retry = await say("origin-retry", review.origin_retry)
-        steps = []
-        for i, step in enumerate(route.steps):
-            cue = f' Guide said: "{step.voice_cue}".' if step.voice_cue else ""
-            steps.append(AudioStep(
-                instruction=await say(f"s{i}-instruction", step.instruction + cue),
-                question=await say(f"s{i}-question", review.checkpoints[i].question),
-            ))
-        fallback_audio = {}
-        for i, landmark in enumerate([review.origin.description] + [s.landmark for s in route.steps]):
-            fallback_audio[str(i-1)] = await say(f"fallback-{i}", fallback(landmark))
         assets = Assets(
-            origin_label=review.origin_label, origin_instruction=review.origin_instruction,
-            origin_retry=review.origin_retry,
-            origin=review.origin, origin_audio=origin_audio, origin_retry_audio=origin_retry,
-            steps=steps, checkpoint_questions=[c.question for c in review.checkpoints],
-            arrival=review.arrival, arrival_audio=await say("arrival", review.arrival),
-            fallback_audio=fallback_audio, override_audio=await say("override", OVERRIDE),
-            sample=review.sample,
+            origin_label=review.origin_label, sample=review.sample,
+            steps=[AssetStep(short_name=c.short_name, expected_seconds=c.expected_seconds)
+                   for c in review.checkpoints],
+            phrases=phrases,
         )
         published = Published(
             route=route, review=review, assets=assets, reviewer=reviewer,
@@ -98,7 +72,8 @@ def main():
                         help="Confirm route order, turns, signs, quotes and exterior destination")
     args = parser.parse_args()
     result = asyncio.run(prepare(args.bundle, DATA, args.reviewer))
-    print(f"Published {result.route.route_id}; sample={result.review.sample}")
+    print(f"Published {result.route.route_id}; sample={result.review.sample}; "
+          f"{len(result.assets.phrases)} phrases")
 
 
 if __name__ == "__main__":

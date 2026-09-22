@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from .models import Published
 
 
@@ -8,24 +10,21 @@ class Store:
     def __init__(self, root: Path):
         self.root = root
 
-    def get(self, route_id: str) -> Published:
+    def route_dir(self, route_id: str) -> Path:
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", route_id):
             raise FileNotFoundError
+        return self.root / "routes" / route_id
+
+    def get(self, route_id: str) -> Published:
         return Published.model_validate_json(
-            (self.root / "routes" / route_id / "published.json").read_text(encoding="utf-8")
+            (self.route_dir(route_id) / "published.json").read_text(encoding="utf-8")
         )
 
     def list(self):
-        return [self.get(p.parent.name).route for p in sorted(
-            (self.root / "routes").glob("*/published.json")
-        )]
-
-    def audio(self, asset_id):
-        if not re.fullmatch(r"[a-z0-9-]+_[a-z0-9-]+\.mp3", asset_id):
-            raise FileNotFoundError
-        route_id, filename = asset_id.split("_", 1)
-        self.get(route_id)  # No access to unpublished/staging audio.
-        path = self.root / "routes" / route_id / "audio" / filename
-        if not path.is_file():
-            raise FileNotFoundError
-        return path
+        routes = []
+        for path in sorted((self.root / "routes").glob("*/published.json")):
+            try:
+                routes.append(self.get(path.parent.name).route)
+            except ValidationError:
+                continue  # Published under an older schema; needs a new reviewed version.
+        return routes

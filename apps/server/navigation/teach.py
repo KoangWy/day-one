@@ -146,10 +146,13 @@ async def ingest_upload(upload, route_id, transcript, data, provider):
         (stage / "teach-log.json").write_text(json.dumps({
             "started_at": started_at, "pre_recorded": True, "events": events,
         }, indent=2), encoding="utf-8")
+        # Blank short_name / expected_seconds make prepare refuse until a reviewer fills them.
         (stage / "review.json").write_text(json.dumps({
-            "origin": {"description": "", "required_text": [], "question": ""},
+            "origin": {"description": "", "required_text": [], "required_features": [],
+                       "short_name": ""},
             "checkpoints": [{"description": s.landmark, "required_text": [],
-                             "question": ""} for s in route.steps],
+                             "required_features": [], "short_name": "",
+                             "expected_seconds": 0} for s in route.steps],
             "arrival": "You have reached the outside of the toilet. Route finished.",
             "destination_is_exterior": False, "sample": False,
         }, indent=2), encoding="utf-8")
