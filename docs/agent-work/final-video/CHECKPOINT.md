@@ -1,6 +1,6 @@
 # Final video demo checkpoint
 
-- Status: ACCEPTED. Three actual MP4s, corrected UI/player, reproducible preparation and Vietnamese handoff are complete on `demo/final-video`; changes remain uncommitted.
+- Status: ACCEPTED. Three actual MP4s, corrected UI/player, reproducible preparation and Vietnamese handoff are complete on `demo/final-video`; committed and pushed as `2d1539ee90142dbd6a97e3b8278c1a18e62da021` (14 files, 1953 insertions).
 - Baseline: `674cdd626cee6fdb84579b5fbaf315aa0fa43497` on `demo/final-video`.
 - Pre-existing work: untracked `data/models/`, preserved.
 - Plan: `PLAN.md` in this directory.
