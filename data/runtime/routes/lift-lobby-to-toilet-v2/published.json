@@ -1,0 +1,131 @@
+{
+  "route": {
+    "route_id": "lift-lobby-to-toilet-v2",
+    "steps": [
+      {
+        "id": "s1",
+        "instruction": "From the lift lobby, follow the corridor toward the end window. Stop beside the glass frontage marked Office for Research & Innovation on your left.",
+        "landmark": "Office for Research & Innovation sign on the glass frontage beside the corridor",
+        "voice_cue": ""
+      },
+      {
+        "id": "s2",
+        "instruction": "Continue along the same corridor to the toilet entrance on your right, marked by wheelchair symbols beside a louvered door. Stop outside the entrance.",
+        "landmark": "Two wheelchair symbols on wood paneling beside the louvered toilet entrance",
+        "voice_cue": ""
+      }
+    ]
+  },
+  "review": {
+    "origin_label": "Lift lobby",
+    "origin_instruction": "Stand outside the lift. Point the camera at the large floor number 3 beside the lift doorway.",
+    "origin_retry": "I only know the saved route from the lift lobby to the toilet. Please check the lift lobby again.",
+    "origin": {
+      "description": "Large number 3 on a white wall just outside a stainless-steel lift doorway",
+      "required_text": [
+        "3"
+      ],
+      "required_features": [
+        "Large floor numeral on the white lobby wall beside the stainless-steel lift doorway"
+      ],
+      "short_name": "floor number 3"
+    },
+    "checkpoints": [
+      {
+        "description": "Office for Research & Innovation sign on the glass frontage beside the corridor",
+        "required_text": [
+          "Office for Research"
+        ],
+        "required_features": [
+          "The sign is on a glass office frontage beside the corridor"
+        ],
+        "short_name": "office sign",
+        "expected_seconds": 8
+      },
+      {
+        "description": "Two wheelchair symbols on wood paneling beside the louvered toilet entrance",
+        "required_text": [],
+        "required_features": [
+          "Two separate white signs bearing wheelchair pictograms are stacked vertically on wood paneling",
+          "A large pale louvered door is immediately beside those wheelchair signs"
+        ],
+        "short_name": "toilet entrance",
+        "expected_seconds": 10
+      }
+    ],
+    "arrival": "You have reached the outside of the toilet entrance. Route finished. Camera stopped.",
+    "destination_is_exterior": true,
+    "sample": false
+  },
+  "assets": {
+    "origin_label": "Lift lobby",
+    "sample": false,
+    "steps": [
+      {
+        "short_name": "office sign",
+        "expected_seconds": 8
+      },
+      {
+        "short_name": "toilet entrance",
+        "expected_seconds": 10
+      }
+    ],
+    "phrases": {
+      "origin-instruction": "Stand outside the lift. Point the camera at the large floor number 3 beside the lift doorway.",
+      "origin-found": "Lift lobby found. Tap Next or say next for the first direction.",
+      "origin-retry": "I only know the saved route from the lift lobby to the toilet. Please check the lift lobby again.",
+      "origin-hint-candidate-left-far": "Possible floor number 3, ahead, slightly left.",
+      "origin-hint-candidate-left-near": "Possible floor number 3 close, slightly left.",
+      "origin-hint-matched-left-far": "Floor number 3, ahead, slightly left.",
+      "origin-hint-matched-left-near": "Floor number 3 close, slightly left.",
+      "origin-hint-candidate-ahead-far": "Possible floor number 3, straight ahead.",
+      "origin-hint-candidate-ahead-near": "Possible floor number 3 close, straight ahead.",
+      "origin-hint-matched-ahead-far": "Floor number 3, straight ahead.",
+      "origin-hint-matched-ahead-near": "Floor number 3 close, straight ahead.",
+      "origin-hint-candidate-right-far": "Possible floor number 3, ahead, slightly right.",
+      "origin-hint-candidate-right-near": "Possible floor number 3 close, slightly right.",
+      "origin-hint-matched-right-far": "Floor number 3, ahead, slightly right.",
+      "origin-hint-matched-right-near": "Floor number 3 close, slightly right.",
+      "s0-instruction": "From the lift lobby, follow the corridor toward the end window. Stop beside the glass frontage marked Office for Research & Innovation on your left.",
+      "s0-reached": "Office sign reached. Tap Next or say next when ready.",
+      "s0-lost": "I haven't found the office sign yet. Stop and turn slowly. Last passed: Lift lobby.",
+      "s0-where": "Last passed: Lift lobby. Heading to: office sign.",
+      "s0-override": "Continue using saved directions without the camera finding the office sign?",
+      "s0-hint-candidate-left-far": "Possible office sign, ahead, slightly left.",
+      "s0-hint-candidate-left-near": "Possible office sign close, slightly left.",
+      "s0-hint-matched-left-far": "Office sign, ahead, slightly left.",
+      "s0-hint-matched-left-near": "Office sign close, slightly left.",
+      "s0-hint-candidate-ahead-far": "Possible office sign, straight ahead.",
+      "s0-hint-candidate-ahead-near": "Possible office sign close, straight ahead.",
+      "s0-hint-matched-ahead-far": "Office sign, straight ahead.",
+      "s0-hint-matched-ahead-near": "Office sign close, straight ahead.",
+      "s0-hint-candidate-right-far": "Possible office sign, ahead, slightly right.",
+      "s0-hint-candidate-right-near": "Possible office sign close, slightly right.",
+      "s0-hint-matched-right-far": "Office sign, ahead, slightly right.",
+      "s0-hint-matched-right-near": "Office sign close, slightly right.",
+      "s1-instruction": "Continue along the same corridor to the toilet entrance on your right, marked by wheelchair symbols beside a louvered door. Stop outside the entrance.",
+      "s1-lost": "I haven't found the toilet entrance yet. Stop and turn slowly. Last passed: office sign.",
+      "s1-where": "Last passed: office sign. Heading to: toilet entrance.",
+      "s1-override": "Continue using saved directions without the camera finding the toilet entrance?",
+      "s1-hint-candidate-left-far": "Possible toilet entrance, ahead, slightly left.",
+      "s1-hint-candidate-left-near": "Possible toilet entrance close, slightly left.",
+      "s1-hint-matched-left-far": "Toilet entrance, ahead, slightly left.",
+      "s1-hint-matched-left-near": "Toilet entrance close, slightly left.",
+      "s1-hint-candidate-ahead-far": "Possible toilet entrance, straight ahead.",
+      "s1-hint-candidate-ahead-near": "Possible toilet entrance close, straight ahead.",
+      "s1-hint-matched-ahead-far": "Toilet entrance, straight ahead.",
+      "s1-hint-matched-ahead-near": "Toilet entrance close, straight ahead.",
+      "s1-hint-candidate-right-far": "Possible toilet entrance, ahead, slightly right.",
+      "s1-hint-candidate-right-near": "Possible toilet entrance close, slightly right.",
+      "s1-hint-matched-right-far": "Toilet entrance, ahead, slightly right.",
+      "s1-hint-matched-right-near": "Toilet entrance close, slightly right.",
+      "arrival": "You have reached the outside of the toilet entrance. Route finished. Camera stopped.",
+      "arrival-unverified": "Saved route finished. The camera did not confirm the destination. Camera stopped.",
+      "vision-down": "Camera check is unavailable. Stop, or say next to continue with saved directions.",
+      "vision-down-origin": "Camera check is unavailable. Check the connection, or stop the route.",
+      "vision-back": "Camera check is back."
+    }
+  },
+  "reviewer": "Team Offixed — v1 content approved by user 2026-09-21; v2 fields from approved spec 2026-09-22",
+  "approved_at": "2026-09-22T07:22:43.490654+00:00"
+}

@@ -1,11 +1,11 @@
 export type Step = { id: string; instruction: string; landmark: string; voice_cue: string }
 export type Route = { route_id: string; steps: Step[] }
-export type Checkpoint = { description: string; required_text: string[]; required_features?: string[]; question: string }
 export type Assets = {
-  origin_label: string; origin_instruction: string; origin_retry: string
-  origin: Checkpoint; origin_audio: string; origin_retry_audio: string
-  steps: { instruction: string; question: string }[]; checkpoint_questions: string[]
-  arrival: string; arrival_audio: string; fallback_audio: Record<string, string>
-  override_audio: string; sample: boolean
+  origin_label: string; sample: boolean
+  steps: { short_name: string; expected_seconds: number }[]
+  phrases: Record<string, string>
 }
-export type ReplayResult = { matched: boolean; instruction: string; checkpoint_question: string; audio_url: string }
+export type Target = 'matched' | 'candidate' | 'none'
+export type Position = 'left' | 'ahead' | 'right' | null
+export type Distance = 'near' | 'far' | null
+export type ObserveResult = { step_index: number; target: Target; position: Position; distance: Distance }
