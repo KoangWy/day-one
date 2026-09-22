@@ -55,7 +55,7 @@ Nếu server HTTPS chưa chạy, bật bằng `bash scripts/serve.sh --https`. K
 
 - Lời dẫn, timeline và nguồn: `apps/web/src/demo/timeline.json`.
 - Script: `scripts/prepare_final_video_media.py`.
-- MP4 hoàn chỉnh: `apps/web/public/demo-media/` — **bị Git bỏ qua**, cần tạo lại hoặc chép riêng khi chuyển máy.
+- MP4 hoàn chỉnh: `apps/web/public/demo-media/` — 3 clip đã được commit trên nhánh `demo/final-video` (~58 MB), clone nhánh là có sẵn. Nếu tạo lại bằng script và muốn chia sẻ bản mới, commit lại thư mục này.
 - Bản gốc, file trung gian, báo cáo và ảnh kiểm thử: `data/runtime/final-video/` — bị Git bỏ qua.
 - Clip H.264/AAC, 1920×1080, 30 fps, fast-start; giọng `en-US-AriaNeural`. Giữ nguyên tiếng người dạy; cắt khoảng lặng đầu/cuối lời AI để vừa các mốc.
 

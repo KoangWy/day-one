@@ -24,7 +24,8 @@ docs/competition brief/
 *.mov
 *.wav
 *.mp3
-# Final-video demo: prepared clips are regenerated locally; never committed.
+# Final-video demo: the three reviewed clips are tracked on the demo branch;
+# stray/generated files in this folder stay local.
 apps/web/public/demo-media/
 node_modules/
 dist/

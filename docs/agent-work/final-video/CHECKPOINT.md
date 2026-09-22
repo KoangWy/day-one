@@ -14,3 +14,4 @@
 - Real iPhone: user confirmed selector visible after stale-PWA page refreshed. Full physical playback, screen recording and VoiceOver remain unverified. No SW/backend change was made for that report.
 - Astra reviewed code, corrections, media evidence and final screenshot, corrected an inaccurate SW claim in the worker report, and completed the Vietnamese guide. Both finished Flash agents were stopped.
 - Handoff: `docs/FINAL_VIDEO_DEMO.md`; `https://100.124.205.33:8443/?demo=1`. No further implementation work pending.
+- Follow-up (2026-09-22, user request): the three reviewed MP4s were force-added to `apps/web/public/demo-media/` (~58 MB) so the branch is self-contained on any machine. This deliberately supersedes the plan's "fully gitignored" media rule for these three clips; the folder ignore rule remains for stray/generated files.
