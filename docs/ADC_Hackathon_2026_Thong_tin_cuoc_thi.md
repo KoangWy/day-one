@@ -68,6 +68,13 @@ Ghi chú: bản ghi video buổi briefing không đọc được (Stream không 
 
 Template và yêu cầu nộp: https://apps.rmit.edu.vn/r/aao
 
+**Bổ sung từ file chính thức `ADC 2026_Submission Guide.pdf` (đọc 21/09):**
+- Nộp đúng **1 deck (.pptx) + 1 video (MP4/MOV)**, cả hai đặt tên `TEAM NAME_PROJECT TITLE`.
+- **Link nộp bài riêng của từng đội gửi lúc 13:00 Ngày 2 (22/09).** Link chỉ dành riêng cho đội, không chia sẻ, **đóng đúng 7:00 sáng 23/09**.
+- Video được chấm bởi đối tác doanh nghiệp và end-users nên cần **trình bày bằng tiếng Anh**, âm thanh rõ, dễ hiểu.
+- Checklist của BTC: deck đúng tên, đúng thứ tự slide, nội dung khớp tiêu chí chấm; video đúng tên và định dạng; cả hai nộp trước 7:00 Ngày 3; tuân thủ Original Work/IP, không đạo văn hay dùng trái phép tài sản trí tuệ bên thứ ba.
+- Template (`Submission Template.pptx`) gồm **8 slide**. Slide 1 có: Project title, Team name, Focus area, Solution category (tick 1 trong 3 loại). Nội dung slide 2–8 chưa đọc được.
+
 ## 4. Tiêu chí chấm điểm
 | Vòng đánh giá (Evaluation Round) | Chung kết (Grand Finale) |
 |---|---|
