@@ -64,7 +64,7 @@ Agents cannot do this part: it needs a person with an iPhone in the corridor. iP
 
 - [ ] Both checkpoints reached **without any override**.
 - [ ] **No wrong "reached"** announcement.
-- [ ] "Reached" within **≤6 s** of the landmark being clearly in frame (measure from the screen recording and `time_to_reach_ms` in the metrics). The footage simulation gave 6.0 s (toilet) and 9.8 s (office), so stop and face the office sign squarely.
+- [ ] "Reached" within **≤6 s** of the landmark being clearly in frame (measure from the screen recording and `time_to_reach_ms` in the metrics). Two footage simulations with live DeepSeek gave toilet 6.0 s / 7.5 s and office 9.8 s / 11.3 s; the target holds only when DeepSeek answers in about 3 s, so note the `latency_p50_ms` of each step and stop facing the office sign squarely.
 - [ ] A **version 2 metrics file** for the walk (Session record → Download session metrics), with a note for every override, summarised by `scripts/metrics.py`.
 - [ ] Watch battery and heat during the walk (one JPEG per second).
 - [ ] Optional re-evaluation with new on-site photos: at least 3 per landmark and 10 negatives, `navigation.evaluate … --route lift-lobby-to-toilet-v2`.
