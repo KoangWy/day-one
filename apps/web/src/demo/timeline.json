@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "ttsVoice": "en-US-AriaNeural",
+  "encode": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "videoCrf": 21,
+    "videoPreset": "veryfast",
+    "audioBitrate": "160k",
+    "audioSampleRate": 48000
+  },
+  "sources": {
+    "teach": {
+      "fileId": "1YQ8oPQBle9ZYzXiEZz3Yaz7DtIvnOEfM",
+      "file": "teach_source.mp4",
+      "durationSeconds": 37.613333,
+      "width": 3840,
+      "height": 2160,
+      "fps": 30,
+      "colorTransfer": "arib-std-b67"
+    },
+    "route": {
+      "fileId": "1BE6mhLiRE6TGpmBd2zrDjXuTqofQUbNj",
+      "file": "route_source.mp4",
+      "durationSeconds": 14.373333,
+      "width": 3840,
+      "height": 2160,
+      "fps": 24,
+      "colorTransfer": "arib-std-b67"
+    },
+    "collision": {
+      "fileId": "1G3K8LyYVbpm9FHe2herSxpTWnvj92MhT",
+      "file": "collision_source.mp4",
+      "durationSeconds": 58.835,
+      "width": 3840,
+      "height": 2160,
+      "fps": 24,
+      "colorTransfer": "arib-std-b67"
+    }
+  },
+  "scenes": {
+    "teach": {
+      "order": 1,
+      "media": "teach.mp4",
+      "source": "teach",
+      "title": "Learn a route",
+      "summary": "Record a walkthrough with your voice, then let the app learn it.",
+      "instructions": "Tap Record, then walk the route at a normal pace.",
+      "primaryLabel": "Record",
+      "stageLabel": "Camera view",
+      "videoAriaLabel": "Camera preview while the route is recorded",
+      "recordChip": true,
+      "keepSourceAudio": true,
+      "leadSeconds": 2,
+      "loadingSeconds": 1,
+      "tailSeconds": 3,
+      "captions": [
+        {
+          "id": "recording-started",
+          "anchor": "lead",
+          "offset": 0,
+          "text": "Recording started."
+        },
+        {
+          "id": "learning",
+          "anchor": "loading",
+          "offset": 0,
+          "text": "Learning."
+        },
+        {
+          "id": "learned",
+          "anchor": "learned",
+          "offset": 0,
+          "text": "Route learned."
+        }
+      ],
+      "tts": [
+        {
+          "id": "recording-started",
+          "anchor": "lead",
+          "offset": 0,
+          "text": "Recording started.",
+          "windowSeconds": 2
+        },
+        {
+          "id": "learning",
+          "anchor": "loading",
+          "offset": 0,
+          "text": "Learning.",
+          "windowSeconds": 1
+        },
+        {
+          "id": "learned",
+          "anchor": "learned",
+          "offset": 0,
+          "text": "Route learned.",
+          "windowSeconds": 3
+        }
+      ]
+    },
+    "route": {
+      "order": 2,
+      "media": "route.mp4",
+      "source": "route",
+      "title": "Elevator to restroom",
+      "summary": "The same walk, replayed as spoken turn-by-turn guidance.",
+      "instructions": "Follow the spoken directions to the restroom.",
+      "primaryLabel": "Start guidance",
+      "stageLabel": "Camera view",
+      "videoAriaLabel": "Saved walk from the elevator to the restroom",
+      "recordChip": false,
+      "keepSourceAudio": false,
+      "captions": [
+        {
+          "id": "turn-right",
+          "at": 0,
+          "text": "Turn right."
+        },
+        {
+          "id": "continue",
+          "at": 3.5,
+          "text": "Continue straight."
+        },
+        {
+          "id": "arrived",
+          "at": 10,
+          "text": "You have arrived. The restroom is on your right."
+        }
+      ],
+      "tts": [
+        {
+          "id": "turn-right",
+          "at": 0,
+          "text": "Turn right.",
+          "windowSeconds": 3.5
+        },
+        {
+          "id": "continue",
+          "at": 3.5,
+          "text": "Continue straight.",
+          "windowSeconds": 6.5
+        },
+        {
+          "id": "arrived",
+          "at": 10,
+          "text": "You have arrived. The restroom is on your right.",
+          "windowSeconds": 4.373333
+        }
+      ]
+    },
+    "collision": {
+      "order": 3,
+      "media": "collision.mp4",
+      "source": "collision",
+      "title": "Obstacle awareness",
+      "summary": "Nine seconds from the corridor: the warning arrives before the person does.",
+      "instructions": "Hold your phone at chest height.",
+      "primaryLabel": "Start guidance",
+      "stageLabel": "Camera view",
+      "videoAriaLabel": "Corridor view with a person stepping into the path",
+      "recordChip": false,
+      "keepSourceAudio": false,
+      "clipStartSeconds": 5,
+      "clipSeconds": 9,
+      "chimeAtSeconds": 1,
+      "captions": [
+        {
+          "id": "watching",
+          "at": 0,
+          "text": "Watching the path ahead."
+        },
+        {
+          "id": "warning",
+          "at": 1,
+          "text": "Be careful. Someone is in front of you.",
+          "warning": true
+        },
+        {
+          "id": "warning-ended",
+          "at": 7,
+          "text": "Warning ended. Keep watching the path ahead."
+        }
+      ],
+      "tts": [
+        {
+          "id": "warning",
+          "at": 1.45,
+          "text": "Be careful. Someone is in front of you.",
+          "windowSeconds": 7.55
+        }
+      ]
+    }
+  }
+}
