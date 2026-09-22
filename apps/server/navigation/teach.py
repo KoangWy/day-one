@@ -1,5 +1,4 @@
 import asyncio
-import io
 import json
 import re
 import subprocess
@@ -7,10 +6,6 @@ import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-
-from PIL import Image, ImageFilter
-
-from .config import FACE_MODEL
 
 
 class TeachError(Exception):
@@ -81,50 +76,6 @@ def edited_segments(text, duration):
     return value
 
 
-class FaceBlur:
-    """Local MediaPipe inference. Model failure prevents every cloud upload."""
-
-    def __init__(self):
-        if not FACE_MODEL.is_file():
-            raise TeachError("Local face model missing. Run scripts/setup_assets.py.", 503)
-        try:
-            import mediapipe as mp
-            self.mp = mp
-            self.detector = mp.tasks.vision.FaceDetector.create_from_options(
-                mp.tasks.vision.FaceDetectorOptions(
-                    base_options=mp.tasks.BaseOptions(model_asset_path=str(FACE_MODEL)),
-                    running_mode=mp.tasks.vision.RunningMode.IMAGE,
-                    min_detection_confidence=0.35,
-                )
-            )
-        except Exception:
-            raise TeachError("Local face detector unavailable; no images sent", 503) from None
-
-    def blur(self, path):
-        import numpy as np
-        with Image.open(path) as original:
-            im = original.convert("RGB")
-        result = self.detector.detect(self.mp.Image(
-            image_format=self.mp.ImageFormat.SRGB, data=np.asarray(im)
-        ))
-        for detection in result.detections:
-            b = detection.bounding_box
-            pad = int(max(b.width, b.height) * 0.35)
-            box = (max(0, b.origin_x-pad), max(0, b.origin_y-pad),
-                   min(im.width, b.origin_x+b.width+pad),
-                   min(im.height, b.origin_y+b.height+pad))
-            face = im.crop(box)
-            # Pixelation before blur avoids relying on browser-specific blur behavior.
-            face = face.resize((1, 1)).resize(face.size).filter(ImageFilter.GaussianBlur(20))
-            im.paste(face, box)
-        output = io.BytesIO()
-        im.save(output, format="JPEG", quality=85)
-        return output.getvalue()
-
-    def close(self):
-        self.detector.close()
-
-
 def process_local(source, folder, transcript):
     has_audio, duration = extract(source, folder)
     if transcript is not None and transcript.strip():
@@ -137,11 +88,7 @@ def process_local(source, folder, transcript):
         raise TeachError("No narration found; supply a corrected transcript")
     segments = [{**s, "start": min(s["start"], duration), "end": min(s["end"], duration)}
                 for s in segments if s["start"] < duration]
-    blur = FaceBlur()
-    try:
-        frames = [(i, blur.blur(p)) for i, p in enumerate(sorted(folder.glob("frame-*.jpg")))]
-    finally:
-        blur.close()
+    frames = [(i, p.read_bytes()) for i, p in enumerate(sorted(folder.glob("frame-*.jpg")))]
     return frames, segments
 
 
@@ -172,14 +119,14 @@ async def ingest_upload(upload, route_id, transcript, data, provider):
                     raise TeachError("Maximum video size is 120 MB", 413)
                 out.write(chunk)
         event("video_imported")
-        # Shield local worker so cancellation cannot remove files beneath FFmpeg/MediaPipe.
+        # Shield local worker so cancellation cannot remove files beneath FFmpeg/Whisper.
         worker = asyncio.create_task(asyncio.to_thread(process_local, source, folder, transcript))
         try:
             frames, segments = await asyncio.shield(worker)
         except asyncio.CancelledError:
             await worker
             raise
-        event("transcribed_and_faces_redacted_locally")
+        event("transcribed_locally")
         route = await provider.draft(route_id, frames, segments)
         if route.route_id != route_id:
             raise TeachError("Draft route ID did not match request")

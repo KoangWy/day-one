@@ -46,7 +46,7 @@ to async narration + explicit disclaimer).
 ```
 Phone PWA (camera + mic, 640px JPEG, ~1fps)
   ↕ WebSocket (WiFi, good-network assumption for demo)
-Laptop Python server (relay + memory store + face-blur + CLIP + state machine)
+Laptop Python server (relay + memory store + CLIP + state machine)
   ↕ Cloud APIs
   Teach (batch): Whisper (STT) + VLM caption + LLM summarize + CLIP embed
   Replay (streaming): Gemini Live or GPT-4o Realtime (vision+voice) + streaming TTS
@@ -129,8 +129,8 @@ Therefore memory is a graph:
 ## 5. Components to build (3-day MVP)
 1. PWA: capture (camera snapshot + mic), WebSocket send, audio playback, big
    accessible buttons, full keyboard flow. No native app.
-2. Server (FastAPI): `/teach`, `/ingest-video`, `/replay`, `/routes`; face-blur
-   before cloud upload; CLIP/SigLIP embedding + cosine search (in-memory or sqlite-vec).
+2. Server (FastAPI): `/teach`, `/ingest-video`, `/replay`, `/routes`;
+   CLIP/SigLIP embedding + cosine search (in-memory or sqlite-vec).
 3. Teach worker: Whisper → VLM caption → LLM segment+summarize → route JSON.
 4. Replay worker: origin check → vector shortlist → VLM confirm → streaming TTS
    → checkpoint state machine.
@@ -147,7 +147,7 @@ Therefore memory is a graph:
 
 ## 7. Privacy (cloud + HR concerns, Stages 4-5)
 - Send keyframes only during active teach/replay (~1fps), never continuous video.
-- Face-blur pre-upload; store captions + transcript + vectors only, no raw video
+- Store captions + transcript + vectors only, no raw video
   retention; explicit consent + retention line in deck.
 - English-first demo and transcripts.
 

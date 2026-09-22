@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import type { Assets, Route } from '../src/types'
 
-// Only /replay is mocked (no VLM key needed); routes, assets, audio, face model and build are real.
+// Only /replay is mocked (no VLM key needed); routes, assets, audio and build are real.
 const ROUTE_ID = process.env.DEMO_ROUTE_ID ?? 'lift-lobby-to-toilet-v1'
 
 async function load(page: Page) {
@@ -34,16 +34,16 @@ test('published route, metadata and every prebuilt MP3 are served by the real se
     expect(response.headers()['content-type']).toBe('audio/mpeg')
     expect((await response.body()).length, url).toBeGreaterThan(10_000)
   }
-  // Service worker precaches the app shell only: never audio, API responses or the local face model.
+  // Service worker precaches the app shell only: never audio or API responses.
   const sw = await (await page.request.get('/sw.js')).text()
-  expect(sw).not.toMatch(/\/audio\/|privacy\/|\/routes/)
+  expect(sw).not.toMatch(/\/audio\/|\/routes/)
 })
 
 test('real build: origin, every checkpoint, fallback override, arrival, with axe at each phase', async ({ page }) => {
   const { route, assets } = await load(page)
   await page.addInitScript(() => {
     if (typeof MediaStream !== 'function' || typeof HTMLCanvasElement.prototype.captureStream !== 'function') return
-    // Test-only synthetic rear camera; face redaction still runs the real local MediaPipe model.
+    // Test-only synthetic rear camera; the real capture path encodes each frame.
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: async () => {
       const canvas = document.createElement('canvas'); canvas.width = 960; canvas.height = 540
       const ctx = canvas.getContext('2d')!

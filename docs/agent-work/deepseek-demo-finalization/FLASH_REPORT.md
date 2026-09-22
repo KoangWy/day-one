@@ -54,9 +54,10 @@ Note: `npm run test:real` mocks `/replay`; it proves the real server/route/MP3/a
 
 ## Evidence provenance
 
-- Live artifact `data/runtime/deepseek-demo-smoke-2026-09-22.json` (gitignored), recorded 2026-09-21T17:15Z = 00:15 ICT 22/09: six real `/replay` ASGI requests on three **existing** reviewed-route frames from `data/runtime/source-media/`, resized ≤640 px and face-redacted locally before upload. 6/6 HTTP 200, 5/6 correct, p50 API 2.365 s, no timeouts; three negatives rejected. Origin correct 2317 ms; office false (expected true) 2321 ms; toilet true 2474 ms; negatives 2411/2333/2397 ms.
+- Live artifact `data/runtime/deepseek-demo-smoke-2026-09-22.json` (gitignored), recorded 2026-09-21T17:15Z = 00:15 ICT 22/09: six real `/replay` ASGI requests on three **existing** reviewed-route frames from `data/runtime/source-media/`, resized ≤640 px before upload. 6/6 HTTP 200, 5/6 correct, p50 API 2.365 s, no timeouts; three negatives rejected. Origin correct 2317 ms; office false (expected true) 2321 ms; toilet true 2474 ms; negatives 2411/2333/2397 ms.
 - Diagnostic `data/runtime/deepseek-office-diagnostic-2026-09-22.json`: office sign text unreadable after the 640 px resize (`text_readable=false`); the guard correctly refused the match.
 - These artifacts are **not** a fresh walk or browser/device capture; not reproduced this run (no fresh inference calls).
+- **Superseded 22/09/2026:** both artifacts were removed and replaced by `data/runtime/deepseek-route-smoke-2026-09-22.json` (frames of `IMG_7546.MOV` sent as the web app captures them): six core cases 6/6 correct, office matches once the sign is close. See `docs/PROTOTYPE_VERIFICATION.md` §1c.
 
 ## Remaining demo limitation
 

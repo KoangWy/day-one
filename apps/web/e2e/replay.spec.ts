@@ -20,7 +20,7 @@ type RequestInfo = { step_index: number; image_jpeg_640: string }
 async function setup(page: Page, outcomes: (boolean | 'error')[] = []) {
   const requests: RequestInfo[] = []
   await page.addInitScript(() => {
-    // Test-only synthetic camera. The production redaction model still runs locally.
+    // Test-only synthetic camera; the production capture path still encodes each frame.
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: async () => {
       const canvas = document.createElement('canvas'); canvas.width = 960; canvas.height = 540
       const ctx = canvas.getContext('2d')!
@@ -71,7 +71,7 @@ async function noSevereAxe(page: Page) {
   expect(results.violations.filter(v => v.impact === 'serious' || v.impact === 'critical')).toEqual([])
 }
 
-test('mock API journey: local face model, keyboard confirmations, arrival and axe', async ({ page }) => {
+test('mock API journey: keyboard confirmations, arrival and axe', async ({ page }) => {
   const requests = await setup(page)
   await noSevereAxe(page)
   await origin(page)
@@ -159,31 +159,4 @@ test('background and reload require origin again', async ({ page }) => {
   await page.reload()
   await expect(page.getByRole('button', { name: 'Start this walk' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Check checkpoint', exact: true })).toHaveCount(0)
-})
-
-test('failed face model blocks all replay uploads', async ({ page }) => {
-  const requests = await setup(page)
-  await page.route('**/privacy/**', r => r.abort())
-  await page.getByLabel('I agree to send these photos').check()
-  await page.getByRole('button', { name: 'Start this walk' }).click()
-  await expect(page.getByText('Face protection could not load.', { exact: false })).toBeVisible()
-  expect(requests).toHaveLength(0)
-})
-
-test('face redaction changes face pixels before JPEG encoding', async ({ page }) => {
-  await setup(page)
-  const changed = await page.evaluate(async () => {
-    const modulePath = '/src/privacy.ts'
-    const { redactFaces } = await import(modulePath)
-    const c = document.createElement('canvas'); c.width = c.height = 100
-    const ctx = c.getContext('2d')!
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 100, 100)
-    ctx.fillStyle = '#000000'; ctx.fillRect(40, 40, 10, 10)
-    const before = [...ctx.getImageData(35, 35, 1, 1).data]
-    redactFaces(c, [{ originX: 35, originY: 35, width: 20, height: 20 }])
-    const after = [...ctx.getImageData(35, 35, 1, 1).data]
-    return { before, after, outside: [...ctx.getImageData(0, 0, 1, 1).data] }
-  })
-  expect(changed.after).not.toEqual(changed.before)
-  expect(changed.outside).toEqual([255, 255, 255, 255])
 })

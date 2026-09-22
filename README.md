@@ -11,9 +11,6 @@ cd apps/server
 uv sync --all-extras --frozen
 cd ../web
 npm ci
-cd ../..
-uv run --project apps/server python scripts/setup_assets.py
-cd apps/web
 npm run build
 cd ../..
 bash scripts/serve.sh
@@ -27,7 +24,7 @@ uv run python -m navigation.prepare ../../data/examples/lift-lobby-to-toilet-v1 
   --reviewer "Team Offixed" --reviewed
 ```
 
-Route đã công bố không ghi đè; nếu có sẵn, bỏ qua lệnh prepare. Hai JSON kết quả DeepSeek cũng đi cùng repo; xem [bàn giao dữ liệu demo](docs/DEMO_HANDOFF.md#dữ-liệu-demo-đi-cùng-repo). Model MediaPipe/WASM được dựng lại bằng setup; key, chứng chỉ, video nguồn và runtime khác bị Git bỏ qua.
+Route đã công bố không ghi đè; nếu có sẵn, bỏ qua lệnh prepare. JSON kết quả DeepSeek cũng đi cùng repo; xem [bàn giao dữ liệu demo](docs/DEMO_HANDOFF.md#dữ-liệu-demo-đi-cùng-repo). Key, chứng chỉ, video nguồn và runtime khác bị Git bỏ qua.
 
 - [Hướng dẫn chạy, teach, HTTPS và thiết bị](docs/PROTOTYPE_RUNBOOK.md)
 - [Kết quả kiểm thử và giới hạn đã biết](docs/PROTOTYPE_VERIFICATION.md)

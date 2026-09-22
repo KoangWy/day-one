@@ -79,7 +79,7 @@ past the pantry?") + optionally one quoted guide cue. Advance only on "yes"
 
 ## 7. Privacy / safety / honesty (kept)
 
-- Keyframes only during sessions (~1fps), face-blur pre-upload, no raw video
+- Keyframes only during sessions (~1fps), no raw video
   retention, consent + retention line in deck.
 - "Wayfinding aid, not a safety device." No full-automation claim (EMNLP 2026
   52.5%). No blindfold demo. Cane primary.

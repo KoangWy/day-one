@@ -13,10 +13,9 @@ export default defineConfig({
       icons: [192, 512].map(size => ({ src: `/icon-${size}.png`, sizes: `${size}x${size}`, type: 'image/png' })),
     },
     workbox: {
-      // App shell only. Never cache API responses, audio, images, model or WASM.
+      // App shell only. Never cache API responses, audio or images.
       globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
-      globIgnores: ['privacy/**'],
-      navigateFallbackDenylist: [/^\/(routes|replay|ingest-video|audio|health|docs|openapi.json|privacy)(\/|$)/],
+      navigateFallbackDenylist: [/^\/(routes|replay|ingest-video|audio|health|docs|openapi.json)(\/|$)/],
       runtimeCaching: [], cleanupOutdatedCaches: true,
     },
   })],

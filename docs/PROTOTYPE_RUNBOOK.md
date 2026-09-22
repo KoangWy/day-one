@@ -4,7 +4,7 @@ Tài liệu nội bộ. UI, chỉ đường và audio đều bằng tiếng Anh.
 
 ## Cấu hình và khởi động
 
-Cần Node 22+, `uv`, Python 3.11 do uv quản lý, FFmpeg. Cài `uv sync --all-extras --frozen` trong `apps/server`, `npm ci` trong `apps/web`; chạy `scripts/setup_assets.py` bằng môi trường server rồi build frontend. Dependency được pin trong `uv.lock` và `package-lock.json`.
+Cần Node 22+, `uv`, Python 3.11 do uv quản lý, FFmpeg. Cài `uv sync --all-extras --frozen` trong `apps/server`, `npm ci` trong `apps/web` rồi build frontend. Dependency được pin trong `uv.lock` và `package-lock.json`.
 
 **Laptop Windows** (đã chạy thử 21/09/2026, Git Bash): cài uv bằng `py -m pip install --user uv` rồi thêm `%APPDATA%\Python\Python313\Scripts` vào PATH (hoặc `winget install astral-sh.uv`). `python3` trên Windows thường là alias Microsoft Store — gọi script Python bằng `uv run --project apps/server python ...`. npm 11+ chặn `postinstall` của esbuild; không cần duyệt vì binary `@esbuild/win32-x64` vẫn chạy. Mọi file JSON/transcript được đọc/ghi UTF-8 tường minh nên review có dấu `’`/tiếng Việt không bị lỗi trên locale cp1252. FFmpeg chỉ cần cho teach: `winget install Gyan.FFmpeg`.
 
@@ -28,7 +28,7 @@ bash scripts/serve.sh
 
 Server phục vụ bản build, API và audio cùng origin ở `http://127.0.0.1:8000`. Dev frontend riêng: `npm run dev` trong `apps/web`, proxy API tới server 8000. `/health` chỉ báo key có được cấu hình, **không chứng minh key còn hiệu lực/quota**. Không bật access log, debug request body hoặc proxy ghi body.
 
-Tuyến demo đã publish, 11 MP3 và hai JSON kết quả DeepSeek được chia sẻ cùng repo theo [mục bàn giao dữ liệu demo](DEMO_HANDOFF.md#dữ-liệu-demo-đi-cùng-repo). Sau clone/pull không cần chạy `prepare` nếu `data/runtime/routes/lift-lobby-to-toilet-v1/` đã có; vẫn phải setup model/WASM và build frontend. Nếu `.env` có `DATA_DIR` riêng, bỏ cấu hình đó để dùng dữ liệu đi kèm hoặc chép tuyến vào `<DATA_DIR>/routes/`.
+Tuyến demo đã publish, 11 MP3 và JSON kết quả DeepSeek được chia sẻ cùng repo theo [mục bàn giao dữ liệu demo](DEMO_HANDOFF.md#dữ-liệu-demo-đi-cùng-repo). Sau clone/pull không cần chạy `prepare` nếu `data/runtime/routes/lift-lobby-to-toilet-v1/` đã có; vẫn phải build frontend. Nếu `.env` có `DATA_DIR` riêng, bỏ cấu hình đó để dùng dữ liệu đi kèm hoặc chép tuyến vào `<DATA_DIR>/routes/`.
 
 ## HTTPS cho iPhone/Windows cùng LAN
 
@@ -68,7 +68,7 @@ uv run python -m navigation.teach_cli /absolute/path/output.mp4 \
   --route-id lift-to-toilet-v3 --transcript /absolute/path/transcript.json
 ```
 
-Transcript nhận text hoặc JSON `[{"start":0,"end":8,"text":"..."}]`, giây tính từ đầu video/clip nhập. Frame khoảng 1 fps, cạnh dài 640. `faster-whisper base.en` chạy CPU; model tải lần đầu cần mạng. MediaPipe xử lý trên laptop trước khi gửi keyframe cho provider. Nếu không có model che mặt, dừng trước upload. Transcript tự động có thể sai, nhất là tiếng vang/khẩu âm; reviewer phải sửa. `voice_cue` không có trích dẫn khớp transcript bị xóa.
+Transcript nhận text hoặc JSON `[{"start":0,"end":8,"text":"..."}]`, giây tính từ đầu video/clip nhập. Frame khoảng 1 fps, cạnh dài 640. `faster-whisper base.en` chạy CPU; model tải lần đầu cần mạng. Keyframe được gửi nguyên cho provider. Transcript tự động có thể sai, nhất là tiếng vang/khẩu âm; reviewer phải sửa. `voice_cue` không có trích dẫn khớp transcript bị xóa.
 
 Kết quả nằm trong `data/runtime/drafts/<route-id>/`:
 
@@ -90,14 +90,14 @@ Teach “offline” nghĩa là chuẩn bị trước replay: VLM và Edge-TTS v�
 
 ## Replay
 
-- Start xin camera, tải model che mặt local, kích hoạt một audio element.
+- Start xin camera và kích hoạt một audio element.
 - Check starting point chụp 3 ảnh cách khoảng 1 giây, gửi từng request; ít nhất 2 ảnh khớp và người dùng Yes mới bắt đầu s1. Không có Next tại origin.
-- Check checkpoint gửi một JPEG đã che mặt; Yes mới tăng bước. Backend luôn lấy instruction từ route đã duyệt. Hai non-match liên tiếp mở fallback; Next còn cần Yes riêng và được đếm manual override.
+- Check checkpoint gửi một JPEG (cạnh dài ≤640 px); Yes mới tăng bước. Backend luôn lấy instruction từ route đã duyệt. Hai non-match liên tiếp mở fallback; Next còn cần Yes riêng và được đếm manual override.
 - Mỗi request provider có deadline server 10 giây; 503 khác với ảnh không khớp. Không retry ẩn. Repeat chỉ phát MP3.
 - Stop/arrival dừng camera. Reload hoặc app xuống nền reset về origin. Không có định vị offline, obstacle detection hoặc chỉ đường do AI sinh trong replay.
 - App voice có thể tắt để nghe screen reader; nếu Safari chặn audio, nút Play instruction hiện ra. Voice command có disclosure, push-to-talk và typed/button fallback; không bật mic khi app voice đang phát. [WebKit](https://webkit.org/blog/6784/new-video-policies-for-ios/), [SpeechRecognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
 
-`/replay`: `{route_id,step_index,image_jpeg_640}` → `{matched,instruction,checkpoint_question,audio_url}`. Index origin là `-1`. 404: route chưa công bố; 422: payload/index/JPEG sai; 503: provider/timeout. Response lỗi không echo base64. Không lưu ảnh replay. Service worker chỉ precache app shell, không cache API, ảnh, audio hoặc model/WASM.
+`/replay`: `{route_id,step_index,image_jpeg_640}` → `{matched,instruction,checkpoint_question,audio_url}`. Index origin là `-1`. 404: route chưa công bố; 422: payload/index/JPEG sai; 503: provider/timeout. Response lỗi không echo base64. Không lưu ảnh replay. Service worker chỉ precache app shell, không cache API, ảnh hoặc audio.
 
 ## Model và chi phí đã khảo sát
 
@@ -124,7 +124,7 @@ npx playwright install chromium webkit
 npm run test:e2e
 ```
 
-E2E dùng camera tổng hợp + API mock, chạy MediaPipe/WASM thật. Không đại diện độ chính xác landmark. WebKit của Playwright **trên Windows** không có `MediaStream`, nên 5 hành trình cần camera tự skip (có ghi lý do); chạy trên macOS/Linux để có WebKit đầy đủ.
+E2E dùng camera tổng hợp + API mock. Không đại diện độ chính xác landmark. WebKit của Playwright **trên Windows** không có `MediaStream`, nên 5 hành trình cần camera tự skip (có ghi lý do); chạy trên macOS/Linux để có WebKit đầy đủ.
 
 Kiểm tra **bản build thật** (server FastAPI thật, `dist` thật, route đã publish và MP3 Edge-TTS thật; chỉ `/replay` được mock nên không cần key): cần `npm run build` và route `lift-lobby-to-toilet-v1` đã publish. Lệnh tự khởi động uvicorn ở cổng 8000 hoặc dùng lại server đang chạy. Kiểm tra mọi MP3, service worker không cache audio/API/model, đi origin → checkpoint → fallback → override → arrival và chạy axe ở từng phase. Đổi route bằng `DEMO_ROUTE_ID=<route-id>`.
 
@@ -147,8 +147,8 @@ cd apps/server
 uv run python -m navigation.evaluate /private/eval/cases.json --output /private/eval/results.json
 ```
 
-Lệnh này gửi ảnh qua che mặt tới provider đang cấu hình, tối đa một call/case. Báo số false positive với mẫu âm tính riêng; giữ timeout/errors trong kết quả. Metrics UI chỉ là số liệu vận hành, không thay ground truth hoặc các lượt đi thực tế.
+Lệnh này thu ảnh về cạnh dài ≤640 px, JPEG chất lượng 85 như app web, rồi gửi tới provider đang cấu hình, tối đa một call/case. Báo số false positive với mẫu âm tính riêng; giữ timeout/errors trong kết quả. Metrics UI chỉ là số liệu vận hành, không thay ground truth hoặc các lượt đi thực tế.
 
 ## Credit
 
-Route teach-and-share inspired by [OCCAM Lab Clew](https://github.com/occamLab/Clew); original implementation by Team Offixed. Không sao chép code Clew. MediaPipe face detector được tải bản versioned về laptop và phục vụ cùng origin, theo [hướng dẫn Web](https://developers.google.com/edge/mediapipe/solutions/vision/face_detector/web_js).
+Route teach-and-share inspired by [OCCAM Lab Clew](https://github.com/occamLab/Clew); original implementation by Team Offixed. Không sao chép code Clew.

@@ -2,7 +2,7 @@
 
 Internal note. Single demo route: `lift-lobby-to-toilet-v1` (Lift lobby → Toilet, 2 checkpoints). All UI, directions, and audio are in English. Demo provider selected on 22/09/2026: **OpenCode Go / DeepSeek V4.1 Flash**; set `VLM_PROVIDER=opencode`, `OPENCODE_MODEL=deepseek-v4.1-flash` in the local `.env` and restart the server. The idle-screen consent must name DeepSeek.
 
-**Measured AI status (22/09/2026).** Real `/replay` on three existing reviewed-route frames: 6/6 HTTP 200, **5/6 correct**, p50 API **2.365 s**, no timeouts, three negatives rejected (no false positives). The office landmark was a **false negative** on old footage — its sign text is unreadable after the 640 px resize (`data/runtime/deepseek-office-diagnostic-2026-09-22.json`). Before filming a fully AI-verified route the office checkpoint needs a closer, clearer camera frame and a real device rehearsal; this artifact is a frame smoke test, not a completed walk, and any override-button use in the video must be labeled a **manual override**. Details: `docs/PROTOTYPE_VERIFICATION.md` §1c.
+**Measured AI status (22/09/2026).** Real `/replay` on frames of the reviewed route video `IMG_7546.MOV`, sent exactly as the web app captures them (longest edge ≤640 px, JPEG quality 85): 10/10 HTTP 200, the six core cases (origin, office, toilet and three cross-checks) **6/6 correct**, **no false positives**, p50 API about **3.0 s**, no timeouts (`data/runtime/deepseek-route-smoke-2026-09-22.json`). The office sign must fill enough of the frame: from about 20.75 s onward it matches, from further away (20.25 s, 20.5 s) the text is too small and it is correctly refused. This is a frame smoke test, not a completed walk: before filming a fully AI-verified route, rehearse on a real device and stop close to the office sign; any override-button use in the video must be labeled a **manual override**. Details: `docs/PROTOTYPE_VERIFICATION.md` §1c.
 
 ## Video nguồn
 
@@ -16,11 +16,11 @@ Theo yêu cầu bàn giao ngày 22/09/2026, `.gitignore` cho phép đúng các f
 
 - `data/runtime/routes/lift-lobby-to-toilet-v1/route.json` và `published.json`: nội dung đã duyệt, metadata và mapping audio.
 - 11 MP3 tổng hợp Edge-TTS trong `data/runtime/routes/lift-lobby-to-toilet-v1/audio/`.
-- `data/runtime/deepseek-demo-smoke-2026-09-22.json` và `data/runtime/deepseek-office-diagnostic-2026-09-22.json`: số đo và kết quả nhận diện, không chứa ảnh/base64 hoặc credential.
+- `data/runtime/deepseek-route-smoke-2026-09-22.json`: số đo và kết quả nhận diện, không chứa ảnh/base64 hoặc credential.
 
-Tổng cộng 15 file, khoảng 0,52 MB. Sau khi các file được commit/push, teammate clone/pull sẽ có sẵn tuyến và evidence; không cần gửi riêng hoặc gọi lại TTS/VLM để tái tạo chúng. `.env` vẫn gửi riêng. Dùng `DATA_DIR` mặc định để app đọc tuyến trong repo; nếu cấu hình thư mục khác, cần chép tuyến vào `<DATA_DIR>/routes/`.
+Tổng cộng 14 file, khoảng 0,52 MB. Sau khi các file được commit/push, teammate clone/pull sẽ có sẵn tuyến và evidence; không cần gửi riêng hoặc gọi lại TTS/VLM để tái tạo chúng. `.env` vẫn gửi riêng. Dùng `DATA_DIR` mặc định để app đọc tuyến trong repo; nếu cấu hình thư mục khác, cần chép tuyến vào `<DATA_DIR>/routes/`.
 
-Video/frame nguồn, draft, log runtime, kết quả thử mới, route khác và MP3 ngoài danh sách vẫn bị Git bỏ qua. Trên máy mới vẫn chạy setup model/WASM và build frontend; tạo chứng chỉ HTTPS theo IP máy mới nếu dùng iPhone.
+Video/frame nguồn, draft, log runtime, kết quả thử mới, route khác và MP3 ngoài danh sách vẫn bị Git bỏ qua. Trên máy mới vẫn build frontend; tạo chứng chỉ HTTPS theo IP máy mới nếu dùng iPhone.
 
 ## 1. Run the demo on the laptop (backend + frontend + build verified)
 
@@ -29,9 +29,6 @@ cd apps/server
 uv sync --all-extras --frozen
 cd ../web
 npm ci
-cd ../..
-uv run --project apps/server python scripts/setup_assets.py
-cd apps/web
 npm run build
 cd ../..
 bash scripts/serve.sh
@@ -62,7 +59,7 @@ Teach/HTTPS/device details: `docs/PROTOTYPE_RUNBOOK.md`. Test results + limits: 
 - [ ] Real Windows machine: open the HTTPS URL, run **real NVDA**, complete origin → s1 → s2 → arrival by keyboard only, screen-record with audio.
 - [ ] Film only in a consented area, avoid bystanders/sensitive info; the white cane stays the primary safety layer. No blindfold demos with volunteers.
 - [ ] Remove the leftover draft `data/runtime/drafts/lift-lobby-vlm-draft/` (not a reviewed route) before recording.
-- [ ] Rehearse the office checkpoint with a closer, clearly readable sign frame before recording a fully AI-verified route; if the sign still is not readable, label that checkpoint a manual override in the video.
+- [ ] Rehearse the office checkpoint standing close to the sign (the footage only matches once the sign fills the left of the frame) before recording a fully AI-verified route; if it still does not match, label that checkpoint a manual override in the video.
 - [ ] Each walk: use Download session metrics in the UI. Complete at least 3 full walks, then aggregate (sample/field kept separate):
 
 ```bash
