@@ -1,6 +1,6 @@
 # Day One — vận hành prototype
 
-Tài liệu nội bộ. UI, chỉ đường và audio đều bằng tiếng Anh. Quyết định cập nhật ngày 21/09/2026: người dùng chọn **Lift lobby → Toilet**, 2–3 checkpoint, cho phép nhận diện pictogram với đặc điểm vật lý; route đã duyệt hiện có 2 checkpoint. Đây là ngoại lệ được duyệt cho yêu cầu 4–5 mốc có chữ trong kế hoạch ban đầu. Không sửa schema route.
+Tài liệu nội bộ. UI, chỉ đường và audio đều bằng tiếng Anh. **Branch `feat/realtime-replay`:** replay gửi ảnh liên tục và nói câu mẫu (mục Replay); `main` giữ luồng Check/Yes cũ. Quyết định cập nhật ngày 21/09/2026: người dùng chọn **Lift lobby → Toilet**, 2–3 checkpoint, cho phép nhận diện pictogram với đặc điểm vật lý; route đã duyệt hiện có 2 checkpoint. Đây là ngoại lệ được duyệt cho yêu cầu 4–5 mốc có chữ trong kế hoạch ban đầu. Không sửa schema route.
 
 ## Cấu hình và khởi động
 
@@ -28,7 +28,7 @@ bash scripts/serve.sh
 
 Server phục vụ bản build, API và audio cùng origin ở `http://127.0.0.1:8000`. Dev frontend riêng: `npm run dev` trong `apps/web`, proxy API tới server 8000. `/health` chỉ báo key có được cấu hình, **không chứng minh key còn hiệu lực/quota**. Không bật access log, debug request body hoặc proxy ghi body.
 
-Tuyến demo đã publish, 11 MP3 và JSON kết quả DeepSeek được chia sẻ cùng repo theo [mục bàn giao dữ liệu demo](DEMO_HANDOFF.md#dữ-liệu-demo-đi-cùng-repo). Sau clone/pull không cần chạy `prepare` nếu `data/runtime/routes/lift-lobby-to-toilet-v1/` đã có; vẫn phải build frontend. Nếu `.env` có `DATA_DIR` riêng, bỏ cấu hình đó để dùng dữ liệu đi kèm hoặc chép tuyến vào `<DATA_DIR>/routes/`.
+Tuyến demo đã publish, 53 MP3 và JSON kết quả DeepSeek được chia sẻ cùng repo theo [mục bàn giao dữ liệu demo](DEMO_HANDOFF.md#dữ-liệu-demo-đi-cùng-repo). Sau clone/pull không cần chạy `prepare` nếu `data/runtime/routes/lift-lobby-to-toilet-v2/` đã có; vẫn phải build frontend. Nếu `.env` có `DATA_DIR` riêng, bỏ cấu hình đó để dùng dữ liệu đi kèm hoặc chép tuyến vào `<DATA_DIR>/routes/`.
 
 ## HTTPS cho iPhone/Windows cùng LAN
 
@@ -73,7 +73,7 @@ Transcript nhận text hoặc JSON `[{"start":0,"end":8,"text":"..."}]`, giây t
 Kết quả nằm trong `data/runtime/drafts/<route-id>/`:
 
 - `route.json`: đúng schema `{route_id, steps[{id,instruction,landmark,voice_cue}]}`.
-- `review.json`: sửa origin, `required_text`, `required_features`, câu hỏi, arrival; xác nhận `destination_is_exterior`.
+- `review.json`: sửa origin, `required_text`, `required_features`, arrival; điền `short_name` (1–40 ký tự, tên mốc dùng trong câu nói, ví dụ `office sign`) cho origin và mọi checkpoint, và `expected_seconds` (1–600, thời gian đi bình thường tới mốc) cho mọi checkpoint; xác nhận `destination_is_exterior`. Khung do teach tạo để trống hai trường này (`""` và `0`) nên prepare từ chối cho tới khi người duyệt điền.
 - `transcript.json`: kiểm tra timestamp và lời nói.
 - `teach-log.json`: timestamp dựng recap; ghi rõ pre-recorded.
 
@@ -84,24 +84,32 @@ uv run python -m navigation.prepare ../../data/runtime/drafts/lift-to-toilet-v2 
   --reviewer "Tên người duyệt" --reviewed
 ```
 
-Prepare tạo sẵn Edge-TTS `en-US-AriaNeural`; chỉ công bố bằng rename atomic sau khi có đủ MP3. Không ghi đè version đã công bố. TTS thất bại không xuất hiện route dở dang. Khi publish một runtime draft, xóa transcript/draft tạm; giữ route, metadata, audio và timing log. Video/audio/frame tạm của ingest được xóa cả khi lỗi. Những file nguồn do người dùng cung cấp và bản tải Drive phục vụ review không bị ingest tự xóa; sau review có thể tự xóa `data/runtime/source-media/`.
+Prepare dựng mọi câu nói từ `phrases.py` (nguồn duy nhất của câu nói; tuyến 2 bước có 53 key) và tạo sẵn một MP3 Edge-TTS `en-US-AriaNeural` cho mỗi key, mất khoảng 2–3 phút; chỉ công bố bằng rename atomic sau khi có đủ MP3. Không ghi đè version đã công bố. TTS thất bại không xuất hiện route dở dang. Khi publish một runtime draft, xóa transcript/draft tạm; giữ route, metadata, audio và timing log. Video/audio/frame tạm của ingest được xóa cả khi lỗi. Những file nguồn do người dùng cung cấp và bản tải Drive phục vụ review không bị ingest tự xóa; sau review có thể tự xóa `data/runtime/source-media/`.
 
 Teach “offline” nghĩa là chuẩn bị trước replay: VLM và Edge-TTS vẫn cần mạng. [faster-whisper](https://github.com/SYSTRAN/faster-whisper), [Edge-TTS](https://github.com/rany2/edge-tts).
 
 ## Replay
 
-- Start xin camera và kích hoạt một audio element.
-- Check starting point chụp 3 ảnh cách khoảng 1 giây, gửi từng request; ít nhất 2 ảnh khớp và người dùng Yes mới bắt đầu s1. Không có Next tại origin.
-- Check checkpoint gửi một JPEG (cạnh dài ≤640 px); Yes mới tăng bước. Backend luôn lấy instruction từ route đã duyệt. Hai non-match liên tiếp mở fallback; Next còn cần Yes riêng và được đếm manual override.
-- Mỗi request provider có deadline server 10 giây; 503 khác với ảnh không khớp. Không retry ẩn. Repeat chỉ phát MP3.
-- Stop/arrival dừng camera. Reload hoặc app xuống nền reset về origin. Không có định vị offline, obstacle detection hoặc chỉ đường do AI sinh trong replay.
-- App voice có thể tắt để nghe screen reader; nếu Safari chặn audio, nút Play instruction hiện ra. Voice command có disclosure, push-to-talk và typed/button fallback; không bật mic khi app voice đang phát. [WebKit](https://webkit.org/blog/6784/new-video-policies-for-ios/), [SpeechRecognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
+Luồng realtime, chi tiết ở `docs/superpowers/specs/2026-09-22-realtime-replay-design.md`:
 
-`/replay`: `{route_id,step_index,image_jpeg_640}` → `{matched,instruction,checkpoint_question,audio_url}`. Index origin là `-1`. 404: route chưa công bố; 422: payload/index/JPEG sai; 503: provider/timeout. Response lỗi không echo base64. Không lưu ảnh replay. Service worker chỉ precache app shell, không cache API, ảnh hoặc audio.
+- Start xin camera và mở khoá một audio element bằng âm câm. Từ đó vòng chụp gửi JPEG (cạnh dài ≤640 px) tới `/observe`: tối đa 2 request cùng lúc, hai lần gửi cách nhau ≥1 s. Vòng chụp tạm dừng khi chờ Next hoặc chờ trả lời override, và tắt khi tới nơi, Stop, app xuống nền hoặc mất track camera.
+- **Tới mốc:** khi ít nhất 2 trong 3 kết quả thành công gần nhất của bước là `matched`. App nói câu "reached" rồi **chờ Next** (nút cao 88 px, hoặc nói "next"). Next nghĩa là sẵn sàng đi tiếp, không phải đã kiểm chứng. Tới mốc cuối thì vào arrival ngay. `candidate` chỉ sinh câu gợi ý ("Possible office sign, ahead, slightly left."), không bao giờ chuyển bước. Câu gợi ý chỉ nói mốc nằm ở đâu trong khung hình, không ra lệnh rẽ, cách nhau ≥8 s (hoặc ≥3 s nếu vị trí đổi), và bị bỏ nếu đang nói câu khác.
+- **Lạc:** đồng hồ của bước bắt đầu khi đọc xong hướng dẫn. Quá `max(3 × expected_seconds, 30 s)` thì app nói câu "lost" và vẫn tiếp tục tìm. Next lúc này mở override ("Continue using saved directions without the camera finding …?"); Yes đi tiếp và được ghi `manual_override`, No quay lại tìm. Qua mốc cuối bằng override thì arrival ghi rõ là chưa được camera xác nhận.
+- **Origin:** không có override, kể cả khi mất kết nối. Sau 30 s chưa thấy thì nhắc lại một lần.
+- **Mất camera check:** 3 lỗi liên tiếp, hoặc `navigator.onLine = false`, bật `visionDown`: app nói câu tương ứng, vòng chụp giãn nhịp 3 s → 5 s → 10 s, và Next mở override (trừ ở origin). Một kết quả thành công tắt cờ và app nói "Camera check is back."
+- Luôn có Where am I (nói nơi vừa qua và mốc đang tìm), Repeat (phát lại câu gần nhất) và Stop. Lệnh giọng nói kiểu push-to-talk: `next`, `yes`, `no`, `repeat`, `where` / `where am I`, `stop`; mở mic thì app dừng nói. Ô gõ lệnh vẫn còn.
+- Âm thanh đi qua một hàng đợi. P1 (mọi câu trừ gợi ý) không bao giờ bị bỏ và cắt ngang câu gợi ý; P2 (gợi ý) bị bỏ khi đang bận hoặc mic đang nghe; P0 chừa cho cảnh báo vật cản sau này. Tắt App voice thì câu P1 hiện ở vùng `aria-live` chính, câu gợi ý ở vùng `aria-live` riêng. Nếu Safari chặn audio, nút Play instruction hiện ra và đồng hồ bước vẫn chạy. [WebKit](https://webkit.org/blog/6784/new-video-policies-for-ios/), [SpeechRecognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
+- Reload hoặc app xuống nền reset về origin. Không có định vị offline, phát hiện vật cản hoặc chỉ đường do AI sinh.
+
+API:
+
+- `POST /observe` `{route_id, step_index, image_jpeg_640}` → `{step_index, target, position, distance}`. `target`: `matched` chỉ khi đạt đúng ngưỡng bằng chứng cũ (`Evidence.supports`); `candidate` khi mô hình thấy thứ có thể là mốc; còn lại `none` (khi đó `position`/`distance` luôn `null`). Index origin là `-1`. 404: route chưa publish; 422: payload/index/JPEG sai; 503 `Visual check unavailable`: provider lỗi hoặc quá 10 s; 503 `Visual check busy`: đã có 4 request đang chạy. Response lỗi không lặp lại base64. Không lưu ảnh.
+- `GET /speech/{route_id}/{key}.mp3`: chỉ nhận key có trong `assets.phrases` của tuyến đã publish, không nhận chữ tự do. Trả file publish; thiếu file thì lấy từ `data/runtime/tts-cache/` hoặc tạo bằng Edge-TTS (timeout 5 s, mỗi câu chỉ tạo một lần) và không bao giờ ghi vào thư mục tuyến. TTS lỗi → 503.
+- `GET /routes/{route_id}/assets` → `{origin_label, sample, steps[{short_name, expected_seconds}], phrases}`. `/routes`, `/health` giữ nguyên. Service worker chỉ precache app shell, không cache API, ảnh hoặc audio.
 
 ## Model và chi phí đã khảo sát
 
-**Cập nhật 22/09/2026:** dùng `deepseek-v4.1-flash` qua OpenCode Go theo lựa chọn của người dùng. Giữ deadline replay 10 giây ở server/12 giây ở browser; kết quả test với provider thật được ghi trong `docs/PROTOTYPE_VERIFICATION.md`. [DeepSeek JSON Output](https://api-docs.deepseek.com/guides/json_mode/) dùng `json_object`, nên không chỉ đổi tên model trong adapter MiMo cũ. Kết quả cuối luôn qua kiểm tra schema/bằng chứng và chờ người dùng xác nhận.
+**Cập nhật 22/09/2026:** dùng `deepseek-v4.1-flash` qua OpenCode Go theo lựa chọn của người dùng. Giữ deadline `/observe` 10 giây ở server/12 giây ở browser; kết quả test với provider thật được ghi trong `docs/PROTOTYPE_VERIFICATION.md`. [DeepSeek JSON Output](https://api-docs.deepseek.com/guides/json_mode/) dùng `json_object`, nên không chỉ đổi tên model trong adapter MiMo cũ. Kết quả cuối luôn qua kiểm tra schema/bằng chứng và chờ người dùng xác nhận.
 
 Khảo sát trước khi chuyển sang DeepSeek:
 
@@ -124,30 +132,31 @@ npx playwright install chromium webkit
 npm run test:e2e
 ```
 
-E2E dùng camera tổng hợp + API mock. Không đại diện độ chính xác landmark. WebKit của Playwright **trên Windows** không có `MediaStream`, nên 5 hành trình cần camera tự skip (có ghi lý do); chạy trên macOS/Linux để có WebKit đầy đủ.
+E2E dùng camera tổng hợp + API mock (`/observe`, `/speech`): đi trọn tuyến, lạc bằng `page.clock` rồi override, `visionDown` rồi hồi phục, không có override ở origin, Stop khi request đang chạy, xuống nền/reload, và kiểm tra không có request nào trong lúc chờ Next; axe ở mọi trạng thái. Không đại diện độ chính xác landmark. WebKit của Playwright **trên Windows** không có `MediaStream`, nên 6 hành trình cần camera tự skip (có ghi lý do); chạy trên macOS/Linux để có WebKit đầy đủ.
 
-Kiểm tra **bản build thật** (server FastAPI thật, `dist` thật, route đã publish và MP3 Edge-TTS thật; chỉ `/replay` được mock nên không cần key): cần `npm run build` và route `lift-lobby-to-toilet-v1` đã publish. Lệnh tự khởi động uvicorn ở cổng 8000 hoặc dùng lại server đang chạy. Kiểm tra mọi MP3, service worker không cache audio/API/model, đi origin → checkpoint → fallback → override → arrival và chạy axe ở từng phase. Đổi route bằng `DEMO_ROUTE_ID=<route-id>`.
+Kiểm tra **bản build thật** (server FastAPI thật, `dist` thật, route đã publish và `/speech` thật; chỉ `/observe` được mock nên không cần key): cần `npm run build` và route `lift-lobby-to-toilet-v2` đã publish. Lệnh tự khởi động uvicorn ở cổng 8000 hoặc dùng lại server đang chạy (máy không có `uv` trong PATH thì tự chạy `apps/server/.venv/Scripts/python.exe -m uvicorn navigation.main:app --port 8000` trong `apps/server` trước). Kiểm tra mọi key trong `phrases` trả MP3, service worker không cache `/speech`/API, đi origin → gợi ý → reached → Next → lost → override → arrival chưa xác nhận, chạy axe ở từng phase, và mọi audio đã tải đều là câu mẫu của tuyến. Đổi route bằng `DEMO_ROUTE_ID=<route-id>`.
 
 ```bash
 cd apps/web
 npm run test:real
 ```
 
-Download session metrics trên UI, rồi:
+Download session metrics trên UI (JSON `kind: "offixed-replay-session", version: 2`: các sự kiện `start`, `origin_found`, `reached`, `next`, `lost`, `where`, `manual_override`, `vision_down`, `vision_back`, `arrival`, `stop`, và một `step_summary` khi rời mỗi bước với `frames_sent`, `errors`, `candidates`, `matches`, `time_to_reach_ms`, `hints_spoken`, `latency_p50_ms`), rồi:
 
 ```bash
 python3 scripts/metrics.py session1.json session2.json session3.json
 # Windows: uv run --project apps/server python scripts/metrics.py session1.json ...
 ```
 
-Đánh giá VLM thật dùng manifest local với các case `id`, `image`, `expected` và `checkpoint` theo schema metadata; tối thiểu ba ảnh mới mỗi landmark, mười ảnh âm tính và origin đúng/sai. `image` là đường dẫn tương đối từ manifest. Không commit ảnh thật.
+Đánh giá VLM thật dùng manifest local. Mỗi case có `id`, `image` (đường dẫn tương đối từ manifest), `expected` (true nếu mốc có trong ảnh), và **một trong hai**: `checkpoint` inline theo schema review (có `expected_seconds` là checkpoint, không có là origin), hoặc `step_index` kèm `--route <route_id>` để lấy checkpoint từ tuyến đã publish. Tối thiểu ba ảnh mới mỗi landmark, mười ảnh âm tính và origin đúng/sai. Không commit ảnh thật.
 
 ```bash
 cd apps/server
-uv run python -m navigation.evaluate /private/eval/cases.json --output /private/eval/results.json
+uv run python -m navigation.evaluate /private/eval/cases.json --output /private/eval/results.json \
+  --route lift-lobby-to-toilet-v2
 ```
 
-Lệnh này thu ảnh về cạnh dài ≤640 px, JPEG chất lượng 85 như app web, rồi gửi tới provider đang cấu hình, tối đa một call/case. Báo số false positive với mẫu âm tính riêng; giữ timeout/errors trong kết quả. Metrics UI chỉ là số liệu vận hành, không thay ground truth hoặc các lượt đi thực tế.
+Lệnh này thu ảnh về cạnh dài ≤640 px, JPEG chất lượng 85 như app web, rồi gọi `observe` của provider đang cấu hình, tối đa một call/case, và phân loại giống hệt `/observe`. Kết quả báo riêng `false_positives` (mẫu âm bị `matched`), `true_positives`, tỷ lệ `candidate` ở mẫu dương và mẫu âm, `p50_ms`, `p95_ms` và `errors`. Kết quả ngày 22/09: `data/runtime/deepseek-observe-eval-2026-09-22.json`. Metrics UI chỉ là số liệu vận hành, không thay ground truth hoặc các lượt đi thực tế.
 
 ## Credit
 
