@@ -5,7 +5,7 @@ import statistics
 from pathlib import Path
 
 COUNTED = ["start", "origin_found", "reached", "next", "lost", "where", "manual_override",
-           "vision_down", "vision_back", "stop"]
+           "vision_down", "vision_back", "stop", "hazard", "obstacle"]
 STEP_TOTALS = ["frames_sent", "errors", "candidates", "matches", "hints_spoken"]
 
 

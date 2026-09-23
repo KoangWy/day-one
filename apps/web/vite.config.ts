@@ -14,12 +14,13 @@ export default defineConfig({
     },
     workbox: {
       // App shell only. Never cache API responses, audio or images.
-      globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
-      navigateFallbackDenylist: [/^\/(routes|observe|speech|ingest-video|health|docs|openapi.json)(\/|$)/],
+      // The obstacle model and its Wasm runtime (~16 MB) load on demand and are never precached.
+      globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'], globIgnores: ['mediapipe/**', 'models/**'],
+      navigateFallbackDenylist: [/^\/(routes|catalog|observe|speech|app-speech|app-phrases|guide|ingest-video|health|docs|openapi.json|mediapipe|models)(\/|$)/],
       runtimeCaching: [], cleanupOutdatedCaches: true,
     },
   })],
-  server: { proxy: Object.fromEntries(['/routes', '/observe', '/speech', '/health', '/ingest-video'].map(
+  server: { proxy: Object.fromEntries(['/routes', '/catalog', '/observe', '/speech', '/app-speech', '/app-phrases', '/guide', '/health', '/ingest-video'].map(
     path => [path, 'http://127.0.0.1:8000']
   )) },
   test: { include: ['src/**/*.test.ts'], environment: 'node' },

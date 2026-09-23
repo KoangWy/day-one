@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { readFileSync } from 'node:fs'
-import type { Assets, ObserveResult, Route } from '../src/types'
+import type { Assets, ObserveResult, Route, RouteSummary } from '../src/types'
 
 const route: Route = JSON.parse(readFileSync('../../data/examples/lift-lobby-to-toilet-v2/route.json', 'utf8'))
 // Mock phrases are labelled by key so each assertion names the sentence it expects.
@@ -17,6 +17,9 @@ const assets: Assets = {
   steps: [{ short_name: 'office sign', expected_seconds: 8 }, { short_name: 'toilet entrance', expected_seconds: 10 }],
   phrases: Object.fromEntries(keys.map(k => [k, phrase(k)])),
 }
+
+const summary: RouteSummary = { route_id: route.route_id, origin_label: 'Lift lobby', destination_label: 'Toilet entrance',
+  origin_place: 'lift-lobby', destination_place: 'toilet-entrance', steps: 2, hazards: 0, sample: true }
 
 type Reply = ObserveResult['target'] | 'error' | 'hang' | Omit<ObserveResult, 'step_index'>
 type Body = { route_id: string; step_index: number; image_jpeg_640: string }
@@ -36,6 +39,10 @@ async function setup(page: Page, script: (body: Body, n: number) => Reply, optio
   })
   if (options.clock) await page.clock.install()
   await page.route('**/routes', r => r.fulfill({ json: [route] }))
+  await page.route('**/catalog', r => r.fulfill({ json: [summary] }))
+  await page.route('**/app-speech/**', r => r.fulfill({ status: 204 }))
+  // No obstacle model in these journeys: alerts report themselves unavailable (obstacles.spec.ts covers them).
+  await page.route('**/models/**', r => r.fulfill({ status: 404 }))
   await page.route('**/health', r => r.fulfill({ json: { provider_label: 'Mock visual provider' } }))
   await page.route('**/routes/*/assets', r => r.fulfill({ json: assets }))
   await page.route('**/speech/**', r => r.fulfill({ status: 204 }))

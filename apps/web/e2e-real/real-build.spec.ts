@@ -144,3 +144,39 @@ test('real build: origin, hint, reached, Next, lost, override, unverified arriva
   expect(audio).toContain(`/speech/${ROUTE_ID}/origin-instruction.mp3`)
   if (browserName === 'chromium') await expect(page.getByText('Audio is paused or unavailable.', { exact: false })).toHaveCount(0)
 })
+
+test('real server: route catalog, built-in app speech, on-device obstacle model, guide access', async ({ page }) => {
+  const catalog = await (await page.request.get('/catalog')).json()
+  const entry = catalog.find((r: { route_id: string }) => r.route_id === ROUTE_ID)
+  expect(entry).toMatchObject({ origin_label: 'Lift lobby', origin_place: 'lift-lobby', sample: false })
+  expect(entry.destination_label.length).toBeGreaterThan(0)
+
+  const phrases = await (await page.request.get('/app-phrases')).json()
+  expect(phrases['obstacle-person']).toBe('Be careful. Someone is in front of you.')
+  for (const key of ['obstacle-person', 'setup-1', 'teach-learned']) {
+    const response = await page.request.get(`/app-speech/${key}.mp3`)
+    expect(response.status(), key).toBe(200)
+    expect(response.headers()['content-type']).toBe('audio/mpeg')
+    expect((await response.body()).length, key).toBeGreaterThan(5_000)
+  }
+  expect((await page.request.get('/app-speech/not-a-phrase.mp3')).status()).toBe(404)
+
+  // The detector runs on the phone: model and runtime come from this server, cacheable, never precached.
+  const model = await page.request.get('/models/efficientdet_lite0.tflite')
+  expect(model.status()).toBe(200)
+  expect((await model.body()).length).toBeGreaterThan(1_000_000)
+  expect(model.headers()['cache-control']).toBe('public, max-age=86400')
+  const wasm = await page.request.head('/mediapipe/wasm/vision_wasm_internal.wasm')
+  expect(wasm.status()).toBe(200)
+  expect(wasm.headers()['content-type']).toBe('application/wasm')
+  const sw = await (await page.request.get('/sw.js')).text()
+  const precache = sw.slice(sw.indexOf('precacheAndRoute('), sw.indexOf('cleanupOutdatedCaches'))
+  expect(precache).toContain('index.html')
+  expect(precache).not.toMatch(/tflite|vision_wasm|\.mp3|app-speech|guide/)
+
+  // The test runs on the laptop itself, so the guide API is open; the API keeps no-store.
+  const access = await page.request.get('/guide/access')
+  expect(await access.json()).toMatchObject({ allowed: true })
+  expect(access.headers()['cache-control']).toBe('no-store')
+  expect(Array.isArray(await (await page.request.get('/guide/drafts')).json())).toBe(true)
+})

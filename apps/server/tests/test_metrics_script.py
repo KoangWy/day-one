@@ -25,6 +25,9 @@ def test_version_2_sessions_are_summarized_per_group(tmp_path):
         {"event": "reached", "at": "t", "step": 0, "sample": False, "time_to_reach_ms": 9000},
         step(0, frames_sent=8, errors=1, candidates=3, matches=2, hints_spoken=2,
              time_to_reach_ms=9000, latency_p50_ms=3200),
+        {"event": "hazard", "at": "t", "step": 1, "sample": False},
+        {"event": "obstacle", "at": "t", "step": 1, "sample": False},
+        {"event": "obstacle", "at": "t", "step": 1, "sample": False},
         {"event": "manual_override", "at": "t", "step": 1, "sample": False},
         step(1, frames_sent=20, errors=4, candidates=0, matches=0, hints_spoken=0,
              time_to_reach_ms=None, latency_p50_ms=None),
@@ -36,6 +39,7 @@ def test_version_2_sessions_are_summarized_per_group(tmp_path):
     result = metrics.summarize([tmp_path / "a.json", tmp_path / "b.json"])
     walk = result["field_route"]
     assert walk["start"] == 1 and walk["manual_override"] == 1
+    assert walk["hazard"] == 1 and walk["obstacle"] == 2
     assert walk["arrivals"] == 1 and walk["verified_arrivals"] == 0
     assert walk["frames_sent"] == 31 and walk["errors"] == 5 and walk["hints_spoken"] == 3
     assert walk["p50_time_to_reach_ms"] == 9000 and walk["reach_n"] == 1

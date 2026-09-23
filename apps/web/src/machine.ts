@@ -5,10 +5,11 @@ export type Phase = 'idle' | 'origin' | 'atOrigin' | 'walking' | 'reached' | 'lo
 export type Priority = 0 | 1 | 2
 export type Say = { key: string; priority: Priority }
 export type LogEvent = 'start' | 'origin_found' | 'reached' | 'next' | 'lost' | 'where'
-  | 'manual_override' | 'vision_down' | 'vision_back' | 'arrival' | 'stop'
+  | 'manual_override' | 'vision_down' | 'vision_back' | 'arrival' | 'stop' | 'hazard' | 'obstacle'
 export type Log = { event: LogEvent; at: number; step: number; time_to_reach_ms?: number; verified?: boolean }
-/** Per-step review data: expected_seconds sets the step's time budget. */
-export type RouteInfo = { steps: { expected_seconds: number }[] }
+/** Per-step review data: expected_seconds sets the step's time budget. Phrases tell which
+ * optional sentences (hazard actions, "On the way") the reviewer saved for this route. */
+export type RouteInfo = { steps: { expected_seconds: number }[]; phrases?: Record<string, string> }
 
 export type State = {
   phase: Phase
@@ -25,13 +26,14 @@ export type State = {
   lastP1: string | null // What Repeat plays and the screen shows.
   lastHint: LastHint | null
   overrides: number
+  warned: number[] // Hazards of the current step already announced.
   unverified: boolean // Arrival reached through a manual override.
   message: string
 }
 
 export type Event =
   | { type: 'START'; at: number }
-  | { type: 'OBSERVATION'; at: number; step_index: number; generation: number; target: Target; position: Position; distance: Distance }
+  | { type: 'OBSERVATION'; at: number; step_index: number; generation: number; target: Target; position: Position; distance: Distance; hazards?: number[] }
   | { type: 'OBSERVE_ERROR'; at: number; step_index: number; generation: number; offline?: boolean }
   | { type: 'TICK'; at: number }
   | { type: 'AUDIO_DONE'; at: number; key: string }
@@ -49,7 +51,7 @@ export const DOWN_AFTER_ERRORS = 3
 export const initial: State = {
   phase: 'idle', index: -1, generation: 0, window: [], stepStartedAt: null, originSince: null,
   originRetried: false, errors: 0, visionDown: false, overrideFrom: null, lastP1: null,
-  lastHint: null, overrides: 0, unverified: false, message: '',
+  lastHint: null, overrides: 0, warned: [], unverified: false, message: '',
 }
 
 /** The capture loop sends frames only while searching; it pauses while waiting for the user. */
@@ -61,17 +63,40 @@ function speak(state: State, key: string): [State, Say] {
   return [{ ...state, lastP1: key }, p1(key)]
 }
 
-function walkTo(s: State, index: number, at: number, log: Log[]): Output {
+function walkTo(s: State, index: number, at: number, log: Log[], route: RouteInfo): Output {
   const [state, say] = speak({
     ...s, phase: 'walking', index, generation: s.generation + 1, window: [], stepStartedAt: null,
-    overrideFrom: null, lastHint: null, message: '',
+    overrideFrom: null, lastHint: null, warned: [], message: '',
   }, `s${index}-instruction`)
-  return { state, say: [say], log }
+  // Named hazards of this step follow the direction; Repeat still replays the direction.
+  const watch = `s${index}-watch`
+  return { state, say: route.phrases?.[watch] ? [say, p1(watch)] : [say], log }
 }
 
-function observed(s: State, e: Extract<Event, { type: 'OBSERVATION' }>, route: RouteInfo): Output {
-  let state: State = { ...s, errors: 0, visionDown: false, window: [...s.window, e.target].slice(-WINDOW) }
+/** Warning chime + sentence for each saved hazard seen close ahead; once per step. */
+function hazards(s: State, e: Extract<Event, { type: 'OBSERVATION' }>, route: RouteInfo): Output {
+  let state = s
   const say: Say[] = [], log: Log[] = []
+  if (s.index < 0 || !(s.phase === 'walking' || s.phase === 'lost')) return { state, say, log }
+  for (const h of e.hazards ?? []) {
+    const key = `s${s.index}-hazard-${h}`
+    if (state.warned.includes(h) || !route.phrases?.[key]) continue
+    state = { ...state, warned: [...state.warned, h] }
+    say.push({ key, priority: 0 })
+    log.push({ event: 'hazard', at: e.at, step: s.index })
+    if (route.phrases[`${key}-action`]) {
+      const [next, action] = speak(state, `${key}-action`)
+      state = next; say.push(action)
+    }
+  }
+  return { state, say, log }
+}
+
+function observed(prev: State, e: Extract<Event, { type: 'OBSERVATION' }>, route: RouteInfo): Output {
+  const warned = hazards(prev, e, route)
+  const s = warned.state
+  let state: State = { ...s, errors: 0, visionDown: false, window: [...s.window, e.target].slice(-WINDOW) }
+  const say: Say[] = [...warned.say], log: Log[] = [...warned.log]
   if (s.visionDown) {
     state = { ...state, lastP1: 'vision-back' }
     say.push(p1('vision-back')); log.push({ event: 'vision_back', at: e.at, step: s.index })
@@ -140,8 +165,8 @@ export function transition(s: State, e: Event, route: RouteInfo): Output {
       return same
     case 'NEXT': {
       const log: Log[] = [{ event: 'next', at: e.at, step: s.index }]
-      if (s.phase === 'atOrigin') return walkTo(s, 0, e.at, log)
-      if (s.phase === 'reached') return walkTo(s, s.index + 1, e.at, log)
+      if (s.phase === 'atOrigin') return walkTo(s, 0, e.at, log, route)
+      if (s.phase === 'reached') return walkTo(s, s.index + 1, e.at, log, route)
       if (s.phase === 'lost' || (s.phase === 'walking' && s.visionDown)) {
         const [state, say] = speak({ ...s, phase: 'override', overrideFrom: s.phase, generation: s.generation + 1 }, `s${s.index}-override`)
         return { state, say: [say], log }
@@ -152,7 +177,7 @@ export function transition(s: State, e: Event, route: RouteInfo): Output {
       if (s.phase !== 'override') return same
       const log: Log[] = [{ event: 'manual_override', at: e.at, step: s.index }]
       const counted = { ...s, overrides: s.overrides + 1 }
-      if (!last) return walkTo(counted, s.index + 1, e.at, log)
+      if (!last) return walkTo(counted, s.index + 1, e.at, log, route)
       const [state, say] = speak({ ...counted, phase: 'arrived', unverified: true, overrideFrom: null, generation: s.generation + 1 }, 'arrival-unverified')
       return { state, say: [say], log: [...log, { event: 'arrival', at: e.at, step: s.index, verified: false }] }
     }

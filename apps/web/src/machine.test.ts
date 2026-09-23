@@ -248,3 +248,62 @@ describe('commands', () => {
     expect(parseCommand('yes and next')).toBeNull(); expect(parseCommand('yesterday')).toBeNull()
   })
 })
+
+describe('route hazards taught by the guide', () => {
+  const phrases = {
+    's1-watch': 'On the way: a glass door.', 's1-hazard-0': 'Be careful. A glass door is in front of you.',
+    's1-hazard-0-action': 'Push the door open and go through.', 's1-hazard-1': 'Be careful. Automatic door ahead.',
+  }
+  const hazardRoute = { ...route, phrases }
+  function go(steps: Step[], start: State) {
+    let state = start
+    const say: Say[] = [], log: Log[] = []
+    for (const step of steps) {
+      const out = transition(state, typeof step === 'function' ? step(state) : step, hazardRoute)
+      state = out.state; say.push(...out.say); log.push(...out.log)
+    }
+    return { state, say, log }
+  }
+  const seen = (hazards: number[], target: Target = 'none', at = 0) => (s: State): Event =>
+    ({ type: 'OBSERVATION', at, step_index: s.index, generation: s.generation, target, position: null, distance: null, hazards })
+  const onStep1 = go([ev('NEXT')], reached0).state
+
+  it('names the step’s hazards right after its direction, keeping Repeat on the direction', () => {
+    const r = go([ev('NEXT')], reached0)
+    expect(r.say).toEqual([{ key: 's1-instruction', priority: 1 }, { key: 's1-watch', priority: 1 }])
+    expect(r.state.lastP1).toBe('s1-instruction')
+    expect(go([ev('NEXT')], atOrigin).say.map(s => s.key)).toEqual(['s0-instruction']) // No hazards saved.
+  })
+  it('warns with P0 the first time a hazard is seen close, then says how to pass it', () => {
+    const r = go([seen([0])], onStep1)
+    expect(r.say).toEqual([{ key: 's1-hazard-0', priority: 0 }, { key: 's1-hazard-0-action', priority: 1 }])
+    expect(r.state.lastP1).toBe('s1-hazard-0-action')
+    expect(r.log.map(l => l.event)).toEqual(['hazard'])
+  })
+  it('each hazard is announced once per step, and one without an action is just the warning', () => {
+    const r = go([seen([0]), seen([0]), seen([0, 1]), seen([1])], onStep1)
+    expect(r.say.map(s => s.key)).toEqual(['s1-hazard-0', 's1-hazard-0-action', 's1-hazard-1'])
+  })
+  it('hazards the route never saved, stale results and the starting point are ignored', () => {
+    expect(go([seen([2])], onStep1).say).toEqual([])
+    expect(go([(s: State) => ({ ...seen([0])(s), generation: s.generation - 1 })], onStep1).say).toEqual([])
+    expect(go([seen([0])], walking0).say).toEqual([]) // Step 0 has no hazards.
+    expect(go([seen([0])], origin).say).toEqual([])
+  })
+  it('a warning and the arrival can come from the same photo', () => {
+    const r = go([seen([], 'matched'), seen([0], 'matched')], onStep1)
+    expect(r.say.map(s => s.key)).toEqual(['s1-hazard-0', 's1-hazard-0-action', 'arrival'])
+    expect(r.state.phase).toBe('arrived')
+  })
+  it('the next step starts with a clean slate', () => {
+    const twoHazardSteps = { steps: [{ expected_seconds: 8 }, { expected_seconds: 8 }, { expected_seconds: 8 }],
+      phrases: { 's0-hazard-0': 'Careful 0.', 's1-hazard-0': 'Careful 1.' } }
+    let s = transition(walking0, seen([0])(walking0), twoHazardSteps).state
+    expect(s.warned).toEqual([0])
+    s = transition(s, seen([], 'matched')(s), twoHazardSteps).state
+    s = transition(s, seen([], 'matched')(s), twoHazardSteps).state
+    s = transition(s, ev('NEXT'), twoHazardSteps).state
+    expect(s.index).toBe(1); expect(s.warned).toEqual([])
+    expect(transition(s, seen([0])(s), twoHazardSteps).say.map(x => x.key)).toEqual(['s1-hazard-0'])
+  })
+})
