@@ -50,6 +50,18 @@ def rate(rows, target):
     return round(sum(r["target"] == target for r in done) / len(done), 3) if done else None
 
 
+def hazard_summary(cases, results):
+    rows = [(c["expected_hazards"], r.get("hazards")) for c, r in zip(cases, results)
+            if "expected_hazards" in c and "error" not in r]
+    return {
+        "hazard_cases": len(rows),
+        "hazard_hits": sum(bool(expected) and set(expected) <= set(seen) for expected, seen in rows),
+        "hazard_expected": sum(bool(expected) for expected, _ in rows),
+        # A warning where the reviewer marked no hazard close ahead.
+        "hazard_false_alarms": sum(not expected and bool(seen) for expected, seen in rows),
+    }
+
+
 async def evaluate(manifest: Path, output: Path, provider=None, published=None):
     cases = json.loads(manifest.read_text(encoding="utf-8"))
     provider = provider or configured_provider()
@@ -64,7 +76,8 @@ async def evaluate(manifest: Path, output: Path, provider=None, published=None):
             async with asyncio.timeout(10):
                 observation = await provider.observe(jpeg, checkpoint)
             result = ObserveResponse.classify(index, observation, checkpoint)
-            row.update(target=result.target, position=result.position, distance=result.distance)
+            row.update(target=result.target, position=result.position, distance=result.distance,
+                       hazards=result.hazards)
         except Exception:
             row["error"] = "unavailable_or_invalid_case"
         row["latency_ms"] = round((time.monotonic() - started) * 1000)
@@ -82,6 +95,8 @@ async def evaluate(manifest: Path, output: Path, provider=None, published=None):
         "candidate_rate_positive": rate(positives, "candidate"),
         "candidate_rate_negative": rate(negatives, "candidate"),
         "errors": sum("error" in r for r in results),
+        # Cases may list "expected_hazards": the saved hazard IDs that should (or not) be seen.
+        **hazard_summary(cases, results),
         "p50_ms": statistics.median(latencies) if latencies else None,
         "p95_ms": percentile(latencies, .95),
         "results": results,

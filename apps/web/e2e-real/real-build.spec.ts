@@ -79,10 +79,10 @@ test('real build: origin, hint, reached, Next, lost, override, unverified arriva
   const said = (key: string) => expect(page.locator('.status-copy .instruction')).toHaveText(assets.phrases[key])
   const next = page.getByRole('button', { name: 'Next', exact: true })
 
-  await page.goto('/')
+  await page.goto(`/?route=${ROUTE_ID}`) // Several routes are published; walk this one.
   await heading('A familiar route starts here.')
   await expect(page.getByText('Illustrative sample route.', { exact: false })).toHaveCount(0)
-  await expect(page.getByText(`${route.steps.length} checkpoints`, { exact: false })).toBeVisible()
+  await expect(page.locator('.route-card').getByText(`${route.steps.length} checkpoints`, { exact: false })).toBeVisible()
   await expect(page.getByText('sends about one photo every 1–3 seconds', { exact: false })).toBeVisible()
   await noSevereAxe(page, 'idle')
 

@@ -73,3 +73,28 @@ def test_percentile_nearest_rank():
     assert percentile([3000], .95) == 3000
     assert percentile(list(range(1, 21)), .95) == 19
     assert percentile([1, 2, 3, 4], .5) == 2
+
+
+async def test_evaluation_counts_hazard_hits_and_false_alarms(tmp_path):
+    Image.new("RGB", (640, 360), "white").save(tmp_path / "frame.jpg")
+    checkpoint = {"description": "Room sign", "required_text": ["001"], "short_name": "room sign",
+                  "expected_seconds": 10, "hazards": [
+                      {"kind": "glass-door", "warning": "Be careful. Glass door.",
+                       "features": ["glass door"]}]}
+    cases = [{"id": f"c{i}", "image": "frame.jpg", "expected": False, "checkpoint": checkpoint,
+              "expected_hazards": expected} for i, expected in enumerate([[0], [0], [], []])]
+    (tmp_path / "cases.json").write_text(json.dumps(cases), encoding="utf-8")
+
+    class Hazards:
+        seen = [["h0"], [], ["h0"], []]
+
+        async def observe(self, jpeg, checkpoint):
+            return Observation(matched=False, observed_text="", observed_features="door",
+                               text_readable=False, contradictory=False, matched_features=[],
+                               target_visible=False, position=None, distance=None,
+                               hazards_visible=self.seen.pop(0))
+
+    summary = await evaluate(tmp_path / "cases.json", tmp_path / "out.json", Hazards())
+    assert [r["hazards"] for r in summary["results"]] == [[0], [], [0], []]
+    assert (summary["hazard_cases"], summary["hazard_expected"]) == (4, 2)
+    assert (summary["hazard_hits"], summary["hazard_false_alarms"]) == (1, 1)
