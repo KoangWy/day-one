@@ -1,4 +1,16 @@
+> **English** (default) | [Tiếng Việt](./PROTOTYPE_VERIFICATION.vi.md)
+
 # Prototype verification — test results and known limits
+
+## S. Branch `super-final-project` (23/09/2026, Windows laptop)
+
+Full write-up with the video → feature map: [SUPER_FINAL.md](SUPER_FINAL.md#verification-23092026-windows-laptop). Only what actually ran:
+
+- **Automated:** server 133 pytest + ruff clean; web 75 vitest (incl. a replay of detector output recorded from the team's footage); Playwright e2e 12/12 on Chromium, WebKit on Windows skips camera journeys (2 non-camera journeys pass); `test:real` 5 pass, 1 WebKit skip.
+- **Obstacle alerts, real detector on footage:** corridor clip — one "someone is in front of you" at 7.25 s, ~4 s before the colleague passes; lift lobby → meeting room clip — no alert (a sofa behind a glass wall was flagged before tuning). ~100 ms per frame on the laptop CPU in Chromium; the full app path (footage as camera → detector → banner → spoken warning → "Warning ended.") passes in e2e. Not measured on an iPhone.
+- **New routes, DeepSeek V4.1 Flash, tonemapped footage frames:** entrance → lift lobby 9/11 matched, 0 false matches, automatic-door warning 3/3 close (+1 early at ~5 m); lift lobby → meeting room 8/9, 0 false matches, glass-door warning 3/3 after correcting the hazard description. p50 2.5–3.0 s. `data/runtime/deepseek-super-final-eval-2026-09-23.json`.
+- **Teach from a phone-sized recording:** 37 s, 720p, 12 MB → learned in ~63 s (FFmpeg via imageio-ffmpeg, Whisper base.en, one DeepSeek draft). The draft repeated the start's evidence at step 1; publishing now refuses that, and the Review page showed the error.
+- **Still open:** the on-site iPhone + VoiceOver walk of all three routes with obstacle and hazard warnings.
 
 Internal note. **§0 covers branch `feat/realtime-replay`.** Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE. Added 22/09/2026: §1c records the real DeepSeek `/replay` smoke on frames of the reviewed route video; §1d records the Windows re-run after the capture change. Canonical backend command is now `uv run python -m pytest -q` (the plain `uv run pytest -q` launcher errored on this machine).
 

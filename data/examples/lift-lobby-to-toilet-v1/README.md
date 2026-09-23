@@ -1,5 +1,7 @@
+> **English** (default) | [Tiếng Việt](./README.vi.md)
+
 # Lift lobby → Toilet
 
-Tuyến demo 2 checkpoint, người dùng đã duyệt hai hướng dẫn trong phiên 21/09/2026. Nguồn: `IMG_7546.MOV`, origin khoảng 12 giây (số tầng **3**), biển Office for Research & Innovation khoảng 20 giây, cửa toilet khoảng 25–32 giây. Chữ chỉ đường do trợ lý soạn từ footage và người dùng duyệt; **không phải kết quả teach VLM đã xác minh**. `voice_cue` để trống vì transcript không đáng tin cậy.
+2-checkpoint demo route; the user reviewed the two direction sentences in the 21/09/2026 session. Source: `IMG_7546.MOV`, origin around second 12 (floor number **3**), Office for Research & Innovation sign around second 20, toilet door around seconds 25–32. Direction text was drafted by an assistant from the footage and approved by the user; **not verified VLM teach output**. `voice_cue` is left empty because the transcript was unreliable.
 
-Được duyệt cho demo; vẫn cần thử ở hiện trường với iPhone/VoiceOver và NVDA. Chỉ công bố bằng lệnh prepare sau khi đã tạo đủ audio. Không có ảnh/video hoặc dữ liệu nhận dạng cá nhân trong fixture.
+Approved for demo; still needs on-site testing with iPhone/VoiceOver and NVDA. Publish only via the prepare command after all audio is generated. No photos/video or personal data in this fixture.
