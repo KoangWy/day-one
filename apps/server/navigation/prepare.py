@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import re
 import shutil
 import tempfile
 from datetime import datetime, timezone
@@ -14,6 +15,23 @@ from .speech import synthesize
 SPEECH_CONCURRENCY = 6  # Publishing from a phone should take seconds, not a minute.
 
 
+def evidence(point):
+    def normal(items):
+        return tuple(sorted(" ".join(re.findall(r"\w+", i.casefold())) for i in items))
+    return normal(point.required_text), normal(point.required_features)
+
+
+def same_as_previous(review: Review):
+    """A checkpoint that looks like the point before it would be 'reached' the moment its step
+    starts, e.g. two doors with the same logo. The reviewer must tell them apart."""
+    points = [review.origin, *review.checkpoints]
+    for i in range(1, len(points)):
+        if evidence(points[i]) == evidence(points[i - 1]):
+            before = "the starting point" if i == 1 else f"step {i - 1}"
+            raise ValueError(f"Step {i} looks the same to the camera as {before}: give it "
+                             "different sign text or features")
+
+
 async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
     route = Route.model_validate_json((bundle / "route.json").read_text(encoding="utf-8"))
     review = Review.model_validate_json((bundle / "review.json").read_text(encoding="utf-8"))
@@ -24,6 +42,7 @@ async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
                          "of the destination, never inside it")
     if not reviewer.strip():
         raise ValueError("Reviewer name is required")
+    same_as_previous(review)
     destination = data / "routes" / route.route_id
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.exists():

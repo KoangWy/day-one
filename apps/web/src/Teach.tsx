@@ -232,8 +232,8 @@ export default function Teach() {
 
         {stage === 'ready' && <>
           <div className="field-grid">
-            <div><label htmlFor="teach-origin">Starting place</label><input id="teach-origin" value={origin} onChange={e => setOrigin(e.target.value)} placeholder="Lift lobby" maxLength={60} autoComplete="off" /></div>
-            <div><label htmlFor="teach-destination">Destination</label><input id="teach-destination" value={destination} onChange={e => setDestination(e.target.value)} placeholder="Meeting room" maxLength={60} autoComplete="off" /></div>
+            <div className="field"><label htmlFor="teach-origin">Starting place</label><input id="teach-origin" value={origin} onChange={e => setOrigin(e.target.value)} placeholder="Lift lobby" maxLength={60} autoComplete="off" /></div>
+            <div className="field"><label htmlFor="teach-destination">Destination</label><input id="teach-destination" value={destination} onChange={e => setDestination(e.target.value)} placeholder="Meeting room" maxLength={60} autoComplete="off" /></div>
           </div>
           <div className="privacy-note"><h3>How to narrate</h3><ul className="tips">
             <li>Hold the phone at chest height, camera forward, and walk at a normal pace.</li>

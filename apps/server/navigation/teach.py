@@ -210,15 +210,23 @@ class Clock:
                             "timestamp": datetime.now(timezone.utc).isoformat()})
 
 
+def place_name(text):
+    """"this is our meeting room" → "Meeting room"."""
+    name = re.sub(r"^(this|here|that)( is|'s)( the| our| your| a)?\s+", "", text.strip(),
+                  flags=re.IGNORECASE).strip(" .!")
+    return name[:1].upper() + name[1:]
+
+
 def remembered(draft):
-    """Names read back to the guide as "places remembered"."""
-    names = [p.name for p in draft.places] or [
-        draft.origin_label, *(c.short_name for c in draft.checkpoints)]
+    """Names read back to the guide as "places remembered": start, named places, destination."""
+    names = [draft.origin_label, *(p.name for p in draft.places), draft.destination_label]
+    if len([n for n in names if n.strip()]) < 2:
+        names += [c.short_name for c in draft.checkpoints]
     seen, unique = set(), []
-    for name in names:
-        if name.strip() and name.casefold() not in seen:
+    for name in map(place_name, names):
+        if name and name.casefold() not in seen:
             seen.add(name.casefold())
-            unique.append(name.strip())
+            unique.append(name)
     return unique
 
 

@@ -117,3 +117,38 @@ def test_app_phrases_are_fixed_keys():
     assert APP_PHRASES["obstacle-person"] == "Be careful. Someone is in front of you."
     assert {"setup-1", "setup-2", "setup-3", "setup-4", "teach-recording", "teach-learned"} <= set(APP_PHRASES)
     assert all(k.replace("-", "").isalnum() and k.islower() for k in APP_PHRASES)
+
+
+@pytest.mark.parametrize("step,copy_from,message", [
+    (0, "origin", "Step 1 looks the same to the camera as the starting point"),
+    (1, 0, "Step 2 looks the same to the camera as step 1"),
+])
+async def test_publication_refuses_a_checkpoint_identical_to_the_point_before(
+        tmp_path, step, copy_from, message):
+    # Two doors with the same logo: the second step would be "reached" the moment it starts.
+    bundle = tmp_path / "bundle"
+    shutil.copytree(LIFT, bundle)
+    _, data = lift()
+    source = data["origin"] if copy_from == "origin" else data["checkpoints"][copy_from]
+    data["checkpoints"][step]["required_text"] = [t.upper() for t in source["required_text"]]
+    data["checkpoints"][step]["required_features"] = list(reversed(source["required_features"]))
+    (bundle / "review.json").write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        await prepare(bundle, tmp_path, "Test", fake_tts)
+    assert Store(tmp_path).list() == []
+
+
+def test_places_remembered_are_names_not_sentences():
+    from navigation.models import Place, Suggestion, TeachDraft
+    from navigation.teach import remembered
+    route = Route.model_validate_json((LIFT / "route.json").read_text(encoding="utf-8"))
+    guess = Suggestion(short_name="office sign", description="", sign_text=[], features=[],
+                       seen_at_second=0)
+    draft = TeachDraft(route=route, origin_label="RMIT gate", destination_label="Lift lobby",
+                       origin=guess, checkpoints=[guess], hazards=[],
+                       places=[Place(name="this is the lift lobby", at_second=30),
+                               Place(name="Here is our office.", at_second=12)])
+    assert remembered(draft) == ["RMIT gate", "Lift lobby", "Office"]
+    draft.origin_label = draft.destination_label = ""
+    draft.places = []
+    assert remembered(draft) == ["Office sign"]  # Nothing named: fall back to the landmarks.
