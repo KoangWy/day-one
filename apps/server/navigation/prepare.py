@@ -11,6 +11,8 @@ from .models import Assets, AssetStep, Published, Review, Route
 from .phrases import build_phrases
 from .speech import synthesize
 
+SPEECH_CONCURRENCY = 6  # Publishing from a phone should take seconds, not a minute.
+
 
 async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
     route = Route.model_validate_json((bundle / "route.json").read_text(encoding="utf-8"))
@@ -18,7 +20,8 @@ async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
     if len(review.checkpoints) != len(route.steps):
         raise ValueError("Each step needs one reviewed checkpoint")
     if not review.destination_is_exterior:
-        raise ValueError("Reviewer must confirm destination is the exterior toilet sign/door")
+        raise ValueError("Reviewer must confirm the route ends at the exterior door or sign "
+                         "of the destination, never inside it")
     if not reviewer.strip():
         raise ValueError("Reviewer name is required")
     destination = data / "routes" / route.route_id
@@ -31,14 +34,27 @@ async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
         audio.mkdir(parents=True)
 
         phrases = build_phrases(route, review)
-        for key, text in phrases.items():
+        slots = asyncio.Semaphore(SPEECH_CONCURRENCY)
+
+        async def speak(key, text):
             path = audio / f"{key}.mp3"
-            await tts(text, path)
+            async with slots:
+                await tts(text, path)
             if not path.exists() or path.stat().st_size < 100:
                 raise ValueError("Speech generation produced no usable audio")
+
+        try:
+            # A task group cancels the rest on the first failure, before the staging folder goes.
+            async with asyncio.TaskGroup() as group:
+                for key, text in phrases.items():
+                    group.create_task(speak(key, text))
+        except ExceptionGroup as failures:
+            raise failures.exceptions[0] from None
         assets = Assets(
-            origin_label=review.origin_label, sample=review.sample,
-            steps=[AssetStep(short_name=c.short_name, expected_seconds=c.expected_seconds)
+            origin_label=review.origin_label, destination_label=review.destination(),
+            sample=review.sample,
+            steps=[AssetStep(short_name=c.short_name, expected_seconds=c.expected_seconds,
+                             hazards=[h.kind for h in c.hazards])
                    for c in review.checkpoints],
             phrases=phrases,
         )

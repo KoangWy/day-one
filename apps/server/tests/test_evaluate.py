@@ -30,6 +30,7 @@ class ScriptedProvider:
             matched=target == "matched", observed_text=" ".join(checkpoint.required_text),
             observed_features="seen", text_readable=True, contradictory=False,
             matched_features=[f"f{i}" for i in range(len(checkpoint.required_features))],
+            hazards_visible=[],
             target_visible=target != "none", position="left" if target != "none" else None,
             distance="far" if target != "none" else None)
 

@@ -1,5 +1,5 @@
 """Every sentence the replay app can say. The VLM only returns structured data."""
-from .models import Review, Route
+from .models import Hazard, Review, Route
 
 FAR = {"left": "ahead, slightly left", "ahead": "straight ahead", "right": "ahead, slightly right"}
 NEAR = {"left": "slightly left", "ahead": "straight ahead", "right": "slightly right"}
@@ -20,6 +20,32 @@ def hints(prefix, short):
         phrases[f"{prefix}-hint-matched-{position}-near"] = (
             f"{capitalize(short)} close, {NEAR[position]}.")
     return phrases
+
+
+KIND = {"glass-door": "a glass door", "automatic-door": "an automatic door", "door": "a door",
+        "stairs": "stairs", "step": "a step", "narrow": "a narrow passage"}
+
+# Sentences that belong to the app, not to a route: phone setup, obstacle alerts and teaching.
+APP_PHRASES = {
+    "setup-1": "Before you start, hang your phone at chest height.",
+    "setup-2": "Keep the camera facing forward, and uncovered.",
+    "setup-3": "Turn the sound on, and keep one ear free.",
+    "setup-4": "And keep using your cane.",
+    "obstacle-person": "Be careful. Someone is in front of you.",
+    "obstacle-object": "Be careful. Something is in your path.",
+    "teach-recording": "Recording started.",
+    "teach-learning": "Learning.",
+    "teach-learned": "Route learned.",
+    "teach-failed": "The route could not be learned. Check the screen for details.",
+}
+
+
+def hazard_name(hazard: Hazard) -> str:
+    return KIND.get(hazard.kind) or hazard.features[0][:1].lower() + hazard.features[0][1:]
+
+
+def listing(items):
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
 
 
 def build_phrases(route: Route, review: Review) -> dict[str, str]:
@@ -43,6 +69,13 @@ def build_phrases(route: Route, review: Review) -> dict[str, str]:
         phrases[f"s{i}-override"] = (
             f"Continue using saved directions without the camera finding the {short}?")
         phrases.update(hints(f"s{i}", short))
+        if checkpoint.hazards:
+            names = [hazard_name(h) for h in checkpoint.hazards]
+            phrases[f"s{i}-watch"] = f"On the way: {listing(names)}."
+        for h, hazard in enumerate(checkpoint.hazards):
+            phrases[f"s{i}-hazard-{h}"] = hazard.warning
+            if hazard.action.strip():
+                phrases[f"s{i}-hazard-{h}-action"] = hazard.action
     phrases.update({
         "arrival": review.arrival,
         "arrival-unverified": ("Saved route finished. The camera did not confirm the destination. "

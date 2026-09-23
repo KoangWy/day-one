@@ -31,7 +31,7 @@ class FakeProvider:
             matched=True, observed_text=" ".join(checkpoint.required_text),
             observed_features=checkpoint.description, text_readable=True, contradictory=False,
             matched_features=[f"f{i}" for i in range(len(checkpoint.required_features))],
-            target_visible=True, position="ahead", distance="near",
+            target_visible=True, position="ahead", distance="near", hazards_visible=[],
         )
 
 

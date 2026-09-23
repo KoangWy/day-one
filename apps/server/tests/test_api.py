@@ -20,7 +20,7 @@ def observation(**change):
     return Observation(**dict({
         "matched": True, "observed_text": "PANTRY", "observed_features": "counter on the left",
         "text_readable": True, "contradictory": False, "matched_features": [],
-        "target_visible": True, "position": "left", "distance": "near",
+        "target_visible": True, "position": "left", "distance": "near", "hazards_visible": [],
     }, **change))
 
 
@@ -33,7 +33,7 @@ async def test_observe_contract_and_no_image_storage(setup, jpeg):
     response = await client.post("/observe", json=payload(jpeg))
     assert response.status_code == 200
     assert response.json() == {"step_index": 0, "target": "matched", "position": "ahead",
-                               "distance": "near"}
+                               "distance": "near", "hazards": []}
     assert response.headers["cache-control"] == "no-store"
     assert set(root.rglob("*")) == before
 
@@ -42,7 +42,8 @@ async def test_origin_is_step_minus_one(setup, jpeg):
     client, provider, *_ = setup
     provider.result = observation(observed_text="OFFICE", position="right", distance="far")
     data = (await client.post("/observe", json=payload(jpeg, -1))).json()
-    assert data == {"step_index": -1, "target": "matched", "position": "right", "distance": "far"}
+    assert data == {"step_index": -1, "target": "matched", "position": "right", "distance": "far",
+                    "hazards": []}
 
 
 @pytest.mark.parametrize("change", [
@@ -53,7 +54,8 @@ async def test_insufficient_evidence_is_only_a_candidate(setup, jpeg, change):
     client, provider, *_ = setup
     provider.result = observation(**change)
     data = (await client.post("/observe", json=payload(jpeg))).json()
-    assert data == {"step_index": 0, "target": "candidate", "position": "left", "distance": "near"}
+    assert data == {"step_index": 0, "target": "candidate", "position": "left", "distance": "near",
+                    "hazards": []}
 
 
 @pytest.mark.parametrize("change", [
@@ -67,7 +69,8 @@ async def test_nothing_visible_or_contradictory_is_none_without_position(setup, 
     client, provider, *_ = setup
     provider.result = observation(**change)
     data = (await client.post("/observe", json=payload(jpeg))).json()
-    assert data == {"step_index": 0, "target": "none", "position": None, "distance": None}
+    assert data == {"step_index": 0, "target": "none", "position": None, "distance": None,
+                    "hazards": []}
 
 
 @pytest.mark.parametrize("change,status", [
@@ -146,8 +149,9 @@ async def test_remote_ingest_and_cross_origin_blocked_before_parsing(setup):
 async def test_assets_v2_and_old_endpoints_are_gone(setup, jpeg):
     client, _, published, *_ = setup
     data = (await client.get(f"/routes/{ROUTE}/assets")).json()
-    assert set(data) == {"origin_label", "sample", "steps", "phrases"}
-    assert data["steps"][0] == {"short_name": "pantry sign", "expected_seconds": 10}
+    assert set(data) == {"origin_label", "destination_label", "sample", "steps", "phrases"}
+    assert data["destination_label"] == "Toilet sign"
+    assert data["steps"][0] == {"short_name": "pantry sign", "expected_seconds": 10, "hazards": []}
     assert data["sample"] is True
     assert data["phrases"]["s0-reached"] == "Pantry sign reached. Tap Next or say next when ready."
     assert (await client.post("/replay", json=payload(jpeg))).status_code in (404, 405)

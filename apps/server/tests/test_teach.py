@@ -8,7 +8,7 @@ from fastapi import UploadFile
 from pydantic import ValidationError
 
 from navigation.config import ROOT
-from navigation.models import Route
+from navigation.models import Route, Suggestion, TeachDraft
 from navigation.prepare import prepare
 from navigation.provider import ProviderUnavailable
 from navigation.storage import Store
@@ -20,6 +20,12 @@ LIFT = ROOT / "data/examples/lift-lobby-to-toilet-v2"
 
 async def dummy_tts(text, path):
     path.write_bytes(b"dummy-audio" * 100)
+
+
+def teach_draft(route, **change):
+    guess = Suggestion(short_name="", description="", sign_text=[], features=[], seen_at_second=0)
+    return TeachDraft(**dict(dict(route=route, origin_label="Office", destination_label="Toilet",
+                                  origin=guess, checkpoints=[], hazards=[], places=[]), **change))
 
 
 async def test_publication_is_atomic_and_failed_audio_never_visible(tmp_path):
@@ -79,14 +85,14 @@ async def test_publication_requires_correct_checkpoint_count_and_exterior(tmp_pa
 async def test_ingest_cleanup_draft_only_and_voice_quote_provenance(tmp_path, monkeypatch, fail):
     local_dirs = []
 
-    def local(source, folder, transcript):
+    def local(source, folder, transcript, live=None):
         local_dirs.append(folder)
         (folder / "speech.wav").write_bytes(b"private audio")
         (folder / "frame-0001.jpg").write_bytes(b"private frame")
         return [(0, b"FRAME")], [{"start": 0, "end": 1, "text": "A real guide cue"}]
 
     class Provider:
-        async def draft(self, route_id, frames, segments):
+        async def draft(self, route_id, frames, segments, hints):
             assert frames[0][1] == b"FRAME"
             if fail:
                 raise ProviderUnavailable()
@@ -94,7 +100,7 @@ async def test_ingest_cleanup_draft_only_and_voice_quote_provenance(tmp_path, mo
             route.route_id = route_id
             route.steps[0].voice_cue = "Invented cold air"
             route.steps[1].voice_cue = "A real guide cue"
-            return route
+            return teach_draft(route)
 
     monkeypatch.setattr("navigation.teach.process_local", local)
     upload = UploadFile(filename="test.mp4", file=io.BytesIO(b"test video"))
@@ -124,7 +130,7 @@ async def test_ingest_cleanup_draft_only_and_voice_quote_provenance(tmp_path, mo
 async def test_cleanup_when_local_processing_fails(tmp_path, monkeypatch):
     folders = []
 
-    def fail(source, folder, transcript):
+    def fail(source, folder, transcript, live=None):
         folders.append(folder)
         raise TeachError("Invalid video")
 
@@ -194,8 +200,8 @@ async def test_two_step_route_publishes_53_phrases_each_with_one_mp3(tmp_path):
     audio = tmp_path / "routes/lift-lobby-to-toilet-v2/audio"
     assert sorted(p.stem for p in audio.iterdir()) == sorted(phrases)
     assert [s.model_dump() for s in published.assets.steps] == [
-        {"short_name": "office sign", "expected_seconds": 8},
-        {"short_name": "toilet entrance", "expected_seconds": 10},
+        {"short_name": "office sign", "expected_seconds": 8, "hazards": []},
+        {"short_name": "toilet entrance", "expected_seconds": 10, "hazards": []},
     ]
     assert published.assets.origin_label == "Lift lobby"
     assert published.assets.sample is False
@@ -210,3 +216,59 @@ async def test_route_list_skips_routes_published_under_the_old_schema(tmp_path):
     (old / "published.json").write_text(json.dumps({"route": {}, "assets": {"origin_audio": ""}}),
                                         encoding="utf-8")
     assert [r.route_id for r in Store(tmp_path).list()] == ["lift-lobby-to-toilet-v2"]
+
+
+def test_live_transcript_is_clamped_to_the_video():
+    from navigation.teach import live_segments
+    text = json.dumps([{"start": 1, "end": 4, "text": "Turn around"},
+                       {"start": 9.5, "end": 10.4, "text": "This is the meeting room"}])
+    assert live_segments(text, 10) == [{"start": 1, "end": 4, "text": "Turn around"},
+                                       {"start": 9.5, "end": 10, "text": "This is the meeting room"}]
+    with pytest.raises(TeachError):
+        live_segments("not json", 10)
+    with pytest.raises(TeachError):
+        live_segments(json.dumps([{"start": 3, "end": 2, "text": "backwards"}]), 10)
+
+
+@pytest.mark.parametrize("whisper,expected", [
+    ("works", "Whisper heard this"),
+    ("fails", "The phone heard this"),
+    ("silent", "The phone heard this"),
+])
+def test_phone_transcript_is_the_fallback_for_whisper(tmp_path, monkeypatch, whisper, expected):
+    from navigation import teach
+    monkeypatch.setattr(teach, "extract", lambda *args: (True, 10))
+
+    def transcribe(path):
+        if whisper == "fails":
+            raise TeachError("Transcription failed")
+        return [] if whisper == "silent" else [{"start": 0, "end": 2, "text": "Whisper heard this"}]
+    monkeypatch.setattr(teach, "transcribe", transcribe)
+    (tmp_path / "frame-0001.jpg").write_bytes(b"FRAME")
+    live = json.dumps([{"start": 0, "end": 2, "text": "The phone heard this"}])
+    frames, segments = teach.process_local(Path("walk.webm"), tmp_path, None, live)
+    assert frames == [(0, b"FRAME")]
+    assert segments[0]["text"] == expected
+
+
+def test_long_walks_send_at_most_48_evenly_spaced_frames(tmp_path, monkeypatch):
+    from navigation import teach
+    monkeypatch.setattr(teach, "extract", lambda *args: (False, 120))
+    for i in range(120):
+        (tmp_path / f"frame-{i + 1:04d}.jpg").write_bytes(bytes([i]))
+    frames, _ = teach.process_local(Path("walk.mp4"), tmp_path, "Go straight", None)
+    seconds = [s for s, _ in frames]
+    assert len(frames) == 48 and seconds[0] == 0 and seconds[-1] == 119
+    assert all(data == bytes([s]) for s, data in frames)
+
+
+def test_probe_without_ffprobe_reads_ffmpeg_summary(tmp_path, monkeypatch):
+    from navigation import teach
+    monkeypatch.setattr(teach, "tool", lambda name: "ffmpeg" if name == "ffmpeg" else None)
+    summary = ("Input #0, matroska,webm, from 'walk.webm':\n  Duration: N/A, start: 0.000\n"
+               "  Stream #0:0(eng): Video: vp8, yuv420p\n  Stream #0:1(eng): Audio: opus, 48000 Hz\n")
+    monkeypatch.setattr(teach, "report", lambda source, *extra: summary if not extra else
+                        summary + "frame= 900 fps=0.0 time=00:00:29.97 bitrate=N/A\n"
+                        "frame= 1100 fps=0.0 time=00:00:36.60 bitrate=N/A\n")
+    assert teach.probe(tmp_path / "walk.webm") == (0, {"matroska", "webm"}, True)
+    assert teach.measure(tmp_path / "walk.webm") == 36.6

@@ -74,7 +74,8 @@ def observed(**change):
     return Observation(**dict({
         "matched": True, "observed_text": "3", "observed_features": "floor sign",
         "text_readable": True, "contradictory": False, "matched_features": [],
-        "target_visible": True, "position": "left", "distance": "far"}, **change))
+        "target_visible": True, "position": "left", "distance": "far",
+        "hazards_visible": []}, **change))
 
 
 @pytest.mark.parametrize("change,expected", [

@@ -51,8 +51,31 @@ class OriginCheckpoint(Model):
         return self
 
 
+HazardKind = Literal["glass-door", "automatic-door", "door", "stairs", "step", "narrow", "other"]
+Label = Annotated[str, Field(min_length=1, max_length=60)]
+
+
+class Hazard(Model):
+    """Something the guide warned about on the way to a checkpoint, e.g. a glass door."""
+    kind: HazardKind
+    # Spoken with the warning chime when the camera sees the hazard close ahead.
+    warning: Annotated[str, Field(min_length=1, max_length=200)]
+    # Optional follow-up, e.g. "Push the door open and go through."
+    action: Annotated[str, Field(max_length=200)] = ""
+    # What the camera looks for. Data for the VLM, never spoken.
+    features: Annotated[list[Text], Field(min_length=1, max_length=3)]
+
+    @model_validator(mode="after")
+    def readable(self):
+        if not re.search(r"\w", self.warning):
+            raise ValueError("Hazard warning must contain readable characters")
+        return self
+
+
 class Checkpoint(OriginCheckpoint):
     expected_seconds: Annotated[int, Field(ge=1, le=600)]
+    # Hazards on the way from the previous point to this checkpoint.
+    hazards: Annotated[list[Hazard], Field(max_length=3)] = []
 
 
 class Review(Model):
@@ -61,18 +84,28 @@ class Review(Model):
     origin_retry: Text = "I only know the office route. Please check the office again."
     origin: OriginCheckpoint
     checkpoints: list[Checkpoint]
+    # Shown in the route list; defaults to the last checkpoint's short name.
+    destination_label: Label | None = None
     arrival: Text
     destination_is_exterior: bool
     sample: bool = False
+
+    def destination(self) -> str:
+        if self.destination_label:
+            return self.destination_label
+        last = self.checkpoints[-1].short_name if self.checkpoints else "Destination"
+        return last[:1].upper() + last[1:]
 
 
 class AssetStep(Model):
     short_name: str
     expected_seconds: int
+    hazards: list[HazardKind] = []
 
 
 class Assets(Model):
     origin_label: str
+    destination_label: str = ""
     sample: bool
     steps: list[AssetStep]
     phrases: dict[str, str]
@@ -135,6 +168,8 @@ class Observation(Evidence):
     target_visible: bool
     position: Position | None
     distance: Distance | None
+    # IDs (h0, h1, h2) of the step's hazards seen close ahead; always [] when it has none.
+    hazards_visible: Annotated[list[str], Field(max_length=3)]
 
 
 class ObserveResponse(Model):
@@ -142,6 +177,7 @@ class ObserveResponse(Model):
     target: Literal["matched", "candidate", "none"]
     position: Position | None
     distance: Distance | None
+    hazards: list[int] = []
 
     @classmethod
     def classify(cls, step_index: int, observation: Observation, checkpoint: OriginCheckpoint):
@@ -153,6 +189,54 @@ class ObserveResponse(Model):
         else:
             target = "none"
         visible = target != "none"
+        # Only IDs of hazards the reviewer actually saved for this step; anything else is dropped.
+        known = range(len(getattr(checkpoint, "hazards", [])))
+        hazards = sorted({int(h[1]) for h in observation.hazards_visible
+                          if re.fullmatch(r"h[0-2]", h) and int(h[1]) in known})
         return cls(step_index=step_index, target=target,
                    position=observation.position if visible else None,
-                   distance=observation.distance if visible else None)
+                   distance=observation.distance if visible else None, hazards=hazards)
+
+
+class RouteSummary(Model):
+    """One saved route in the walker's list; places link routes into a longer journey."""
+    route_id: Identifier
+    origin_label: str
+    destination_label: str
+    origin_place: str
+    destination_place: str
+    steps: int
+    hazards: int
+    sample: bool
+
+
+class Place(Model):
+    name: Label
+    at_second: Annotated[float, Field(ge=0, le=600)]
+
+
+class Suggestion(Model):
+    """The teach AI's reading of one landmark. A starting point for the reviewer, never published as is."""
+    short_name: Annotated[str, Field(max_length=40)]
+    description: Annotated[str, Field(max_length=300)]
+    sign_text: Annotated[list[Annotated[str, Field(max_length=80)]], Field(max_length=5)]
+    features: Annotated[list[Annotated[str, Field(max_length=200)]], Field(max_length=5)]
+    seen_at_second: Annotated[float, Field(ge=0, le=600)]
+
+
+class HazardSuggestion(Model):
+    step_index: Annotated[int, Field(ge=0, le=4)]
+    kind: HazardKind
+    warning: Annotated[str, Field(max_length=200)]
+    action: Annotated[str, Field(max_length=200)]
+    features: Annotated[list[Annotated[str, Field(max_length=200)]], Field(max_length=3)]
+
+
+class TeachDraft(Model):
+    route: Route
+    origin_label: Annotated[str, Field(max_length=60)]
+    destination_label: Annotated[str, Field(max_length=60)]
+    origin: Suggestion
+    checkpoints: Annotated[list[Suggestion], Field(max_length=5)]
+    hazards: Annotated[list[HazardSuggestion], Field(max_length=6)]
+    places: Annotated[list[Place], Field(max_length=8)]

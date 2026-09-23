@@ -4,7 +4,14 @@ import httpx
 import pytest
 
 from navigation.main import create_app
-from navigation.models import Checkpoint, Evidence, Observation, OriginCheckpoint, Route
+from navigation.models import (
+    Checkpoint,
+    Evidence,
+    Hazard,
+    Observation,
+    OriginCheckpoint,
+    TeachDraft,
+)
 from navigation.provider import OpenCode, ProviderUnavailable
 
 
@@ -55,7 +62,8 @@ async def test_opencode_adapter_uses_schema_and_rejects_malformed_output(
         seen.append(body)
         evidence = {"matched": True, "observed_text": "3", "observed_features": "floor sign",
                     "text_readable": True, "contradictory": False, "matched_features": [],
-                    "target_visible": True, "position": "ahead", "distance": "near"}
+                    "target_visible": True, "position": "ahead", "distance": "near",
+                    "hazards_visible": []}
         return httpx.Response(200, json={"choices": [{"message": {
             "content": "not JSON" if bad_response else json.dumps(evidence),
         }}]})
@@ -95,7 +103,8 @@ async def test_deepseek_rejects_invalid_or_truncated_json_without_retry(monkeypa
         calls.append(request)
         evidence = {"matched": True, "observed_text": "3", "observed_features": "floor sign",
                     "text_readable": True, "contradictory": False, "matched_features": [],
-                    "target_visible": True, "position": "left", "distance": "far"}
+                    "target_visible": True, "position": "left", "distance": "far",
+                    "hazards_visible": []}
         evidence.update(change)
         return httpx.Response(200, json={"choices": [{"finish_reason": finish, "message": {
             "content": json.dumps(evidence),
@@ -112,30 +121,69 @@ async def test_deepseek_rejects_invalid_or_truncated_json_without_retry(monkeypa
     assert len(calls) == 1
 
 
-async def test_deepseek_teach_requests_route_schema_not_evidence(monkeypatch):
+async def test_deepseek_teach_requests_draft_schema_not_evidence(monkeypatch):
     monkeypatch.setenv("OPENCODE_API_KEY", "fake-test-key")
     monkeypatch.setenv("OPENCODE_MODEL", "deepseek-v4.1-flash")
-    route = {"route_id": "test-route", "steps": [
+    guess = {"short_name": "office sign", "description": "OFFICE sign", "sign_text": ["OFFICE"],
+             "features": ["glass wall"], "seen_at_second": 4}
+    draft = {"route": {"route_id": "test-route", "steps": [
         {"id": "s1", "instruction": "Follow the corridor to the office sign.",
          "landmark": "OFFICE sign", "voice_cue": ""},
         {"id": "s2", "instruction": "Continue to the toilet entrance.",
          "landmark": "TOILET sign", "voice_cue": ""},
-    ]}
+    ]}, "origin_label": "Lift lobby", "destination_label": "Toilet", "origin": guess,
+        "checkpoints": [guess, dict(guess, short_name="toilet sign", seen_at_second=9)],
+        "hazards": [{"step_index": 0, "kind": "glass-door", "warning": "Be careful. Glass door.",
+                     "action": "Push the door open.", "features": ["glass door"]}],
+        "places": [{"name": "Toilet", "at_second": 9}]}
 
     def handle(request):
         body = json.loads(request.content)
         assert body["response_format"] == {"type": "json_object"}
         assert body["max_tokens"] == 4096
         prompt = body["messages"][0]["content"][-1]["text"]
-        assert json.dumps(Route.model_json_schema()) in prompt
+        assert json.dumps(TeachDraft.model_json_schema()) in prompt
         assert "observed_features" not in prompt
-        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(route)}}]})
+        intro = body["messages"][0]["content"][0]["text"]
+        assert '"Lift lobby"' in intro and "EXTERIOR" in intro and "turn around" in intro
+        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(draft)}}]})
 
     original = httpx.AsyncClient
     monkeypatch.setattr("navigation.provider.httpx.AsyncClient",
                         lambda **kwargs: original(transport=httpx.MockTransport(handle), **kwargs))
-    result = await OpenCode().draft("test-route", [(0, b"test-image")], [])
-    assert result.model_dump() == route
+    result = await OpenCode().draft("test-route", [(0, b"test-image")], [],
+                                    {"origin_label": "Lift lobby"})
+    assert result.model_dump() == draft
+
+
+async def test_observe_prompt_lists_step_hazards_with_ids(monkeypatch):
+    monkeypatch.setenv("OPENCODE_API_KEY", "fake-test-key")
+    monkeypatch.setenv("OPENCODE_MODEL", "deepseek-v4.1-flash")
+    bodies = []
+
+    def handle(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps({
+            "matched": False, "observed_text": "", "observed_features": "glass door",
+            "text_readable": False, "contradictory": False, "matched_features": [],
+            "target_visible": False, "position": None, "distance": None,
+            "hazards_visible": ["h0"]})}}]})
+
+    original = httpx.AsyncClient
+    monkeypatch.setattr("navigation.provider.httpx.AsyncClient",
+                        lambda **kwargs: original(transport=httpx.MockTransport(handle), **kwargs))
+    checkpoint = Checkpoint(description="Room sign", required_text=["2.3.001"],
+                            short_name="meeting room sign", expected_seconds=12, hazards=[
+                                Hazard(kind="glass-door", warning="Be careful. A glass door.",
+                                       features=["frameless glass door with a metal handle"])])
+    result = await OpenCode().observe(b"test-image", checkpoint)
+    assert result.hazards_visible == ["h0"]
+    prompt = bodies[0]["messages"][0]["content"][0]["text"]
+    assert "hazards_visible" in prompt
+    assert ('[{"id":"h0","kind":"glass-door","features":'
+            '["frameless glass door with a metal handle"]}]') in prompt
+    assert "Be careful" not in prompt  # Spoken warnings are not model input.
+    assert '"hazards_visible": []' in bodies[0]["messages"][0]["content"][-1]["text"]
 
 
 async def test_health_names_deepseek_for_consent(monkeypatch, tmp_path):
@@ -199,7 +247,8 @@ async def test_observe_prompt_keeps_rules_and_sends_one_call(monkeypatch):
         return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps({
             "matched": False, "observed_text": "", "observed_features": "corridor",
             "text_readable": False, "contradictory": False, "matched_features": [],
-            "target_visible": True, "position": "right", "distance": "far"})}}]})
+            "target_visible": True, "position": "right", "distance": "far",
+            "hazards_visible": []})}}]})
 
     original = httpx.AsyncClient
     monkeypatch.setattr("navigation.provider.httpx.AsyncClient",
