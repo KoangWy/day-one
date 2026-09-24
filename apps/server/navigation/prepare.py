@@ -1,25 +1,35 @@
 import argparse
 import asyncio
 import json
+import re
 import shutil
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-import edge_tts
-
 from .config import DATA
-from .models import Assets, AudioStep, Published, Review, Route
+from .models import Assets, AssetStep, Published, Review, Route
+from .phrases import build_phrases
+from .speech import synthesize
 
-OVERRIDE = "Continue using saved directions without visual verification?"
-
-
-def fallback(last):
-    return f"I lost track, slowly turn left or right. Last confirmed: {last}."
+SPEECH_CONCURRENCY = 6  # Publishing from a phone should take seconds, not a minute.
 
 
-async def synthesize(text, path):
-    await edge_tts.Communicate(text, "en-US-AriaNeural").save(str(path))
+def evidence(point):
+    def normal(items):
+        return tuple(sorted(" ".join(re.findall(r"\w+", i.casefold())) for i in items))
+    return normal(point.required_text), normal(point.required_features)
+
+
+def same_as_previous(review: Review):
+    """A checkpoint that looks like the point before it would be 'reached' the moment its step
+    starts, e.g. two doors with the same logo. The reviewer must tell them apart."""
+    points = [review.origin, *review.checkpoints]
+    for i in range(1, len(points)):
+        if evidence(points[i]) == evidence(points[i - 1]):
+            before = "the starting point" if i == 1 else f"step {i - 1}"
+            raise ValueError(f"Step {i} looks the same to the camera as {before}: give it "
+                             "different sign text or features")
 
 
 async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
@@ -28,9 +38,11 @@ async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
     if len(review.checkpoints) != len(route.steps):
         raise ValueError("Each step needs one reviewed checkpoint")
     if not review.destination_is_exterior:
-        raise ValueError("Reviewer must confirm destination is the exterior toilet sign/door")
+        raise ValueError("Reviewer must confirm the route ends at the exterior door or sign "
+                         "of the destination, never inside it")
     if not reviewer.strip():
         raise ValueError("Reviewer name is required")
+    same_as_previous(review)
     destination = data / "routes" / route.route_id
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.exists():
@@ -40,33 +52,30 @@ async def prepare(bundle: Path, data: Path, reviewer: str, tts=synthesize):
         audio = stage / "audio"
         audio.mkdir(parents=True)
 
-        async def say(name, text):
-            path = audio / f"{name}.mp3"
-            await tts(text, path)
+        phrases = build_phrases(route, review)
+        slots = asyncio.Semaphore(SPEECH_CONCURRENCY)
+
+        async def speak(key, text):
+            path = audio / f"{key}.mp3"
+            async with slots:
+                await tts(text, path)
             if not path.exists() or path.stat().st_size < 100:
                 raise ValueError("Speech generation produced no usable audio")
-            return f"/audio/{route.route_id}_{name}.mp3"
 
-        origin_audio = await say("origin", review.origin.question)
-        origin_retry = await say("origin-retry", review.origin_retry)
-        steps = []
-        for i, step in enumerate(route.steps):
-            cue = f' Guide said: "{step.voice_cue}".' if step.voice_cue else ""
-            steps.append(AudioStep(
-                instruction=await say(f"s{i}-instruction", step.instruction + cue),
-                question=await say(f"s{i}-question", review.checkpoints[i].question),
-            ))
-        fallback_audio = {}
-        for i, landmark in enumerate([review.origin.description] + [s.landmark for s in route.steps]):
-            fallback_audio[str(i-1)] = await say(f"fallback-{i}", fallback(landmark))
+        try:
+            # A task group cancels the rest on the first failure, before the staging folder goes.
+            async with asyncio.TaskGroup() as group:
+                for key, text in phrases.items():
+                    group.create_task(speak(key, text))
+        except ExceptionGroup as failures:
+            raise failures.exceptions[0] from None
         assets = Assets(
-            origin_label=review.origin_label, origin_instruction=review.origin_instruction,
-            origin_retry=review.origin_retry,
-            origin=review.origin, origin_audio=origin_audio, origin_retry_audio=origin_retry,
-            steps=steps, checkpoint_questions=[c.question for c in review.checkpoints],
-            arrival=review.arrival, arrival_audio=await say("arrival", review.arrival),
-            fallback_audio=fallback_audio, override_audio=await say("override", OVERRIDE),
+            origin_label=review.origin_label, destination_label=review.destination(),
             sample=review.sample,
+            steps=[AssetStep(short_name=c.short_name, expected_seconds=c.expected_seconds,
+                             hazards=[h.kind for h in c.hazards])
+                   for c in review.checkpoints],
+            phrases=phrases,
         )
         published = Published(
             route=route, review=review, assets=assets, reviewer=reviewer,
@@ -98,7 +107,8 @@ def main():
                         help="Confirm route order, turns, signs, quotes and exterior destination")
     args = parser.parse_args()
     result = asyncio.run(prepare(args.bundle, DATA, args.reviewer))
-    print(f"Published {result.route.route_id}; sample={result.review.sample}")
+    print(f"Published {result.route.route_id}; sample={result.review.sample}; "
+          f"{len(result.assets.phrases)} phrases")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 > [English](./DEMO_HANDOFF.md) | **Tiếng Việt** (mặc định là tiếng Anh)
 
+> **Nhánh `super-final-project`:** bản tiếng Việt này dịch từ `main` và mô tả tuyến v1 với luồng Check/Yes cũ. Trên nhánh này có ba tuyến realtime (`lift-lobby-to-toilet-v2`, `entrance-to-lift-lobby-v1`, `lift-lobby-to-meeting-room-v1`); checklist cập nhật nằm ở bản tiếng Anh [DEMO_HANDOFF.md](DEMO_HANDOFF.md), tính năng mới ở [SUPER_FINAL.vi.md](SUPER_FINAL.vi.md).
+
 # Demo handoff — checklist chạy, thử hiện trường, deck/video
 
 Ghi chú nội bộ. Một tuyến demo duy nhất: `lift-lobby-to-toilet-v1` (Lift lobby → Toilet, 2 checkpoint). Toàn bộ UI, chỉ đường và audio đều bằng tiếng Anh. Provider demo chốt ngày 22/09/2026: **OpenCode Go / DeepSeek V4.1 Flash**; đặt `VLM_PROVIDER=opencode`, `OPENCODE_MODEL=deepseek-v4.1-flash` trong `.env` cục bộ rồi restart server. Màn hình chờ phải ghi consent tên DeepSeek.

@@ -2,9 +2,13 @@
 
 # Demo handoff — run checklist, field test, deck/video
 
-Internal note. Single demo route: `lift-lobby-to-toilet-v1` (Lift lobby → Toilet, 2 checkpoints). All UI, directions, and audio are in English. Demo provider selected on 22/09/2026: **OpenCode Go / DeepSeek V4.1 Flash**; set `VLM_PROVIDER=opencode`, `OPENCODE_MODEL=deepseek-v4.1-flash` in the local `.env` and restart the server. The idle-screen consent must name DeepSeek.
+Internal note. **Branch `super-final-project`** adds the demo video's features to the realtime app: teach and review on the phone, three chained routes (main entrance → lift lobby → meeting room or toilet), route hazards, on-phone obstacle alerts and the Wear your phone card. What was built, how it was verified and what is still open: [SUPER_FINAL.md](SUPER_FINAL.md). Before a demo on this branch, walk the three routes once on site with the iPhone (checklist 2a applies to each), and try one obstacle alert with a colleague walking towards the phone.
 
-**Measured AI status (22/09/2026).** Real `/replay` on frames of the reviewed route video `IMG_7546.MOV`, sent exactly as the web app captures them (longest edge ≤640 px, JPEG quality 85): 10/10 HTTP 200, the six core cases (origin, office, toilet and three cross-checks) **6/6 correct**, **no false positives**, p50 API about **3.0 s**, no timeouts (`data/runtime/deepseek-route-smoke-2026-09-22.json`). The office sign must fill enough of the frame: from about 20.75 s onward it matches, from further away (20.25 s, 20.5 s) the text is too small and it is correctly refused. This is a frame smoke test, not a completed walk: before filming a fully AI-verified route, rehearse on a real device and stop close to the office sign; any override-button use in the video must be labeled a **manual override**. Details: `docs/PROTOTYPE_VERIFICATION.md` §1c.
+**On branch `feat/realtime-replay`** the demo route is `lift-lobby-to-toilet-v2` (Lift lobby → Toilet, 2 checkpoints, same reviewed directions and evidence as v1) and replay is the realtime flow: the camera sends a photo every 1–3 s while walking, the app announces each landmark with reviewed template sentences and waits for **Next** (ready, not verified). `main` keeps v1 and the Check/Yes flow for the 23/09 submission. All UI, directions, and audio are in English. Demo provider selected on 22/09/2026: **OpenCode Go / DeepSeek V4.1 Flash**; set `VLM_PROVIDER=opencode`, `OPENCODE_MODEL=deepseek-v4.1-flash` in the local `.env` and restart the server. The idle-screen consent must name DeepSeek.
+
+**Realtime `/observe` status (22/09/2026, this branch).** `navigation.evaluate` on 26 route-footage frames (13 positive including far views, 13 negative including hard negatives such as the in-lift floor display, the ground-floor lift lobby, a different office sign and a single wheelchair sign): 12/13 positives `matched`, **0 false positives**, `candidate` on 1/13 positives and 1/12 answered negatives, p50 **3.2 s**, p95 7.4 s, one 10 s provider timeout (`data/runtime/deepseek-observe-eval-2026-09-22.json`). A simulated walk (real app, real server, real DeepSeek, camera replaying `IMG_7546.MOV` frames at video speed) reached the toilet **6.0 s** after the wheelchair signs were clearly in frame and the office sign **9.8 s** after it became readable; see `docs/PROTOTYPE_VERIFICATION.md` §0. These are footage replays, not the required on-site walk.
+
+**Measured AI status of the old `/replay` flow (22/09/2026, `main`).** Real `/replay` on frames of the reviewed route video `IMG_7546.MOV`, sent exactly as the web app captures them (longest edge ≤640 px, JPEG quality 85): 10/10 HTTP 200, the six core cases (origin, office, toilet and three cross-checks) **6/6 correct**, **no false positives**, p50 API about **3.0 s**, no timeouts (`data/runtime/deepseek-route-smoke-2026-09-22.json`). The office sign must fill enough of the frame: from about 20.75 s onward it matches, from further away (20.25 s, 20.5 s) the text is too small and it is correctly refused. This is a frame smoke test, not a completed walk: before filming a fully AI-verified route, rehearse on a real device and stop close to the office sign; any override-button use in the video must be labeled a **manual override**. Details: `docs/PROTOTYPE_VERIFICATION.md` §1c.
 
 ## Source video
 
@@ -14,13 +18,16 @@ Internal note. Single demo route: `lift-lobby-to-toilet-v1` (Lift lobby → Toil
 
 ## Demo data shipped with the repo
 
-Per the 22/09/2026 handoff request, `.gitignore` allows exactly these files to be committed/pushed with the code:
+On branch `super-final-project`, `.gitignore` allows exactly these files to be committed/pushed with the code:
 
-- `data/runtime/routes/lift-lobby-to-toilet-v1/route.json` and `published.json`: reviewed content, metadata and audio mapping.
-- 11 Edge-TTS MP3s in `data/runtime/routes/lift-lobby-to-toilet-v1/audio/`.
-- `data/runtime/deepseek-route-smoke-2026-09-22.json`: measurements and recognition results, no images/base64 or credentials.
+- Three published routes, each with `route.json`, `published.json` (reviewed content, `short_name`/`expected_seconds`, hazards and every template sentence in `assets.phrases`) and one Edge-TTS MP3 per phrase in `audio/`:
+  - `data/runtime/routes/lift-lobby-to-toilet-v2/` — Lift lobby → Toilet entrance, 53 MP3s.
+  - `data/runtime/routes/entrance-to-lift-lobby-v1/` — Main entrance → Lift lobby (automatic-door warning), 56 MP3s.
+  - `data/runtime/routes/lift-lobby-to-meeting-room-v1/` — Lift lobby → Meeting room 2.3.001 (glass-door warning), 56 MP3s.
+- `data/runtime/deepseek-observe-eval-2026-09-22.json` and `data/runtime/deepseek-super-final-eval-2026-09-23.json`: `/observe` evaluations on footage frames, no images/base64 or credentials.
+- `data/runtime/deepseek-route-smoke-2026-09-22.json`: measurements of the old `/replay` flow, kept as history.
 
-14 files total, about 0.52 MB. After these files are committed/pushed, a teammate's clone/pull already contains the route and evidence; no separate transfer or TTS/VLM rerun is needed to recreate them. `.env` is still shared separately. Use the default `DATA_DIR` so the app reads the in-repo route; with a different folder configured, copy the route into `<DATA_DIR>/routes/`.
+The v1 route (`lift-lobby-to-toilet-v1`) is not on this branch because its `published.json` does not fit the realtime schema; it stays on `main`. A clone/pull has every route ready; no TTS call is needed. A sentence whose MP3 is missing is generated once by `/speech` into `data/runtime/tts-cache/`. The obstacle model is downloaded by `npm run build`, not shipped. `.env` (and `TEACH_PIN`) is still shared separately; with a custom `DATA_DIR`, copy the routes into `<DATA_DIR>/routes/`.
 
 Source videos/frames, drafts, runtime logs, new test results, other routes and off-list MP3s stay Git-ignored. A fresh machine still builds the frontend; create HTTPS certificates for the new machine IP when using an iPhone.
 
@@ -36,15 +43,15 @@ cd ../..
 bash scripts/serve.sh
 ```
 
-Open `http://127.0.0.1:8000`. Configure `.env` from `.env.example` (the frontend never receives keys). Published routes are immutable — skip `prepare` when `data/runtime/routes/lift-lobby-to-toilet-v1/` already exists:
+Open `http://127.0.0.1:8000`. Configure `.env` from `.env.example` (the frontend never receives keys). Published routes are immutable — skip `prepare` when `data/runtime/routes/lift-lobby-to-toilet-v2/` already exists (publishing makes 53 MP3s and takes about 2–3 minutes):
 
 ```bash
 cd apps/server
-uv run python -m navigation.prepare ../../data/examples/lift-lobby-to-toilet-v1 \
+uv run python -m navigation.prepare ../../data/examples/lift-lobby-to-toilet-v2 \
   --reviewer "Team Offixed" --reviewed
 ```
 
-Pre-demo self-check on the laptop (real server + real build + published route and MP3s, VLM mocked, axe at every phase; Chromium passed on 21/09):
+Pre-demo self-check on the laptop (real server + real build + published route and `/speech`, only `/observe` mocked, axe at every phase; Chromium 2/2 on this branch 22/09):
 
 ```bash
 cd apps/web
@@ -55,7 +62,22 @@ Windows laptop: install uv with `py -m pip install --user uv`, run commands from
 
 Teach/HTTPS/device details: `docs/PROTOTYPE_RUNBOOK.md`. Test results + limits: `docs/PROTOTYPE_VERIFICATION.md`.
 
-## 2. On-site field test (finish before the 15:00 22/09 freeze)
+## 2. On-site field test
+
+### 2a. Realtime replay acceptance (spec §12.4, required before calling the branch done)
+
+Agents cannot do this part: it needs a person with an iPhone in the corridor. iPhone Safari + VoiceOver, lift lobby → toilet, provider DeepSeek, screen recording with audio.
+
+- [ ] Both checkpoints reached **without any override**.
+- [ ] **No wrong "reached"** announcement.
+- [ ] "Reached" within **≤6 s** of the landmark being clearly in frame (measure from the screen recording and `time_to_reach_ms` in the metrics). Two footage simulations with live DeepSeek gave toilet 6.0 s / 7.5 s and office 9.8 s / 11.3 s; the target holds only when DeepSeek answers in about 3 s, so note the `latency_p50_ms` of each step and stop facing the office sign squarely.
+- [ ] A **version 2 metrics file** for the walk (Session record → Download session metrics), with a note for every override, summarised by `scripts/metrics.py`.
+- [ ] Watch battery and heat during the walk (one JPEG per second).
+- [ ] Optional re-evaluation with new on-site photos: at least 3 per landmark and 10 negatives, `navigation.evaluate … --route lift-lobby-to-toilet-v2`.
+
+If the timing misses the target, the constants to tune are in `apps/web/src/machine.ts` (2 of 3 window, step budget) and `apps/web/src/frameLoop.ts` (2 in flight, 1 s gap); the server allows 4 concurrent `/observe`.
+
+### 2b. Earlier checklist (Check/Yes flow on `main`, 15:00 22/09 freeze)
 
 - [ ] Real iPhone: same-LAN HTTPS (`bash scripts/setup_https.sh <LAN-IP>` then `bash scripts/serve.sh --https`), install + trust the CA, grant camera in Safari, try Add to Home Screen too. Record real corridor footage.
 - [ ] Real Windows machine: open the HTTPS URL, run **real NVDA**, complete origin → s1 → s2 → arrival by keyboard only, screen-record with audio.

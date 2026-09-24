@@ -2,116 +2,129 @@
 
 # Day One — prototype operations
 
-Internal note. UI, directions and audio are all in English. Updated decision on 21/09/2026: the user chose **Lift lobby → Toilet**, 2–3 checkpoints, allowing pictogram recognition with physical features; the reviewed route currently has 2 checkpoints. This is an approved exception to the original 4–5 text-sign requirement. The route schema is unchanged.
+Internal note. UI, directions and audio are all in English. **Branch `super-final-project`:** the realtime replay of `feat/realtime-replay` (continuous photos, template speech) plus the demo video's features: teaching and reviewing routes on the phone, several routes that chain into a journey, route hazards, on-phone obstacle alerts and the Wear your phone card. Feature map and results: [SUPER_FINAL.md](SUPER_FINAL.md). `main` keeps the old Check/Yes flow. Decision of 21/09/2026: routes may use 2–3 checkpoints and pictogram recognition with physical features, an approved exception to the original 4–5 text-sign requirement.
 
 ## Setup and startup
 
-Requires Node 22+, `uv`, uv-managed Python 3.11, FFmpeg. Run `uv sync --all-extras --frozen` in `apps/server`, `npm ci` in `apps/web`, then build the frontend. Dependencies are pinned in `uv.lock` and `package-lock.json`.
+Requires Node 22+, `uv`, uv-managed Python 3.11. Run `uv sync --all-extras --frozen` in `apps/server`, `npm ci` in `apps/web`, then build the frontend. Dependencies are pinned in `uv.lock` and `package-lock.json`.
 
-**Windows laptop** (tested 21/09/2026, Git Bash): install uv with `py -m pip install --user uv`, then add `%APPDATA%\Python\Python313\Scripts` to PATH (or `winget install astral-sh.uv`). `python3` on Windows is usually a Microsoft Store alias — invoke Python scripts with `uv run --project apps/server python ...`. npm 11+ blocks the esbuild `postinstall`; no approval needed because the `@esbuild/win32-x64` binary still runs. All JSON/transcript files are read/written as explicit UTF-8, so reviews containing `’`/Vietnamese survive a cp1252 locale. FFmpeg is only needed for teach: `winget install Gyan.FFmpeg`.
+- `npm run build` / `npm run dev` first run `scripts/obstacle-assets.mjs`: it copies the MediaPipe Wasm runtime from `node_modules` into `public/mediapipe/wasm/` and downloads the EfficientDet-Lite0 model (4.6 MB, Apache-2.0) once into `public/models/` (both gitignored; needs internet the first time). Without the model the app still runs and says obstacle alerts are unavailable.
+- FFmpeg is only needed for teaching. When it is not on PATH, teach uses the FFmpeg bundled with `imageio-ffmpeg` (part of the `teach` extra), and reads the duration from FFmpeg itself when FFprobe is missing.
+- **Windows laptop** (Git Bash): if `uv` is not on PATH, `python -m uv …` works when uv is installed as a module (`py -m pip install --user uv`), and the venv runs everything: `apps/server/.venv/Scripts/python.exe -m pytest -q`, `-m uvicorn --app-dir apps/server navigation.main:app --port 8000`. `python3` is often a Microsoft Store alias. npm 11+ blocks the esbuild `postinstall`; the `@esbuild/win32-x64` binary still runs. All JSON/transcript files are UTF-8 explicitly, so reviews with `’` or Vietnamese survive a cp1252 locale.
 
-Copy `.env.example` to `.env` when missing. Never overwrite an existing `.env`. Never paste keys into the frontend or into curl commands that may be saved in shell history.
+Copy `.env.example` to `.env` when missing; never overwrite an existing `.env`, never paste keys into the frontend or into shell history.
 
-Locked demo provider on 22/09/2026: **DeepSeek V4.1 Flash via OpenCode Go**, for video/presentation recording.
+Demo provider locked on 22/09/2026: **DeepSeek V4.1 Flash via OpenCode Go**.
 
 ```dotenv
 VLM_PROVIDER=opencode
 OPENCODE_MODEL=deepseek-v4.1-flash
 OPENCODE_API_KEY=...
+# Optional: lets a guide's phone teach and publish (4+ characters)
+TEACH_PIN=...
 ```
 
-DeepSeek uses Chat Completions with `response_format=json_object`, the schema in the prompt and thinking disabled; the backend still validates types/semantics with Pydantic before using results. MiMo keeps the `json_schema` branch when selected manually. Do not switch to Muse Spark in this variable because Muse uses the Responses API. The UI reads provider/model names from `/health` for correct consent display; it never auto-switches model/provider on error. Restart the server after changing `.env`.
-
-The Gemini Developer API adapter is still available via manual `VLM_PROVIDER=gemini`, `VLM_MODEL` and `GEMINI_API_KEY`; no Vertex AI configuration is needed for the current demo.
+DeepSeek uses Chat Completions with `response_format=json_object`, the schema in the prompt and thinking disabled; the backend still validates everything with Pydantic. MiMo keeps the `json_schema` branch when selected manually; Muse Spark does not fit this adapter. The UI reads the provider name from `/health` for the consent text and never switches provider on errors. The Gemini Developer API adapter remains available with `VLM_PROVIDER=gemini`, `VLM_MODEL`, `GEMINI_API_KEY`. Restart the server after changing `.env`.
 
 ```bash
 bash scripts/serve.sh
 ```
 
-The server serves the build, API and audio from one origin at `http://127.0.0.1:8000`. Separate frontend dev: `npm run dev` in `apps/web`, proxying the API to server port 8000. `/health` only reports whether a key is configured, **not whether the key is valid or has quota**. No access log, debug request body, or body-logging proxy.
+The server serves the build, API and audio from one origin at `http://127.0.0.1:8000`; on startup it pre-generates the app's fixed sentences into the speech cache. Separate frontend dev: `npm run dev` in `apps/web` proxies the API to port 8000. `/health` only says whether a key is configured, not whether it works. No access log, no request-body logging.
 
-The published demo route, 11 MP3s and DeepSeek result JSON ship with the repo per [demo data shipped with the repo](DEMO_HANDOFF.md#demo-data-shipped-with-the-repo). After clone/pull, skip `prepare` when `data/runtime/routes/lift-lobby-to-toilet-v1/` already exists; the frontend must still be built. When `.env` has a custom `DATA_DIR`, drop that setting to use the bundled data, or copy the route into `<DATA_DIR>/routes/`.
+Three published demo routes (`lift-lobby-to-toilet-v2`, `entrance-to-lift-lobby-v1`, `lift-lobby-to-meeting-room-v1`), their MP3s and the DeepSeek result JSON ship with the repo ([demo data shipped with the repo](DEMO_HANDOFF.md#demo-data-shipped-with-the-repo)). After clone/pull skip `prepare`; the frontend must still be built. With a custom `DATA_DIR`, copy the routes into `<DATA_DIR>/routes/`.
 
 ## HTTPS for iPhone/Windows on the same LAN
 
 ```bash
 brew install mkcert                 # macOS; Windows: winget install FiloSottile.mkcert
-bash scripts/setup_https.sh 192.168.0.143  # replace with the laptop's current LAN IP
+bash scripts/setup_https.sh 192.168.0.143  # the laptop's current LAN IP
 bash scripts/serve.sh --https
 ```
 
-Windows laptop: on the first `--https` run, Windows Defender Firewall asks to allow Python — select **Private networks** only; the user clicks it. Otherwise the iPhone/NVDA machine cannot reach port 8443.
+On Windows, allow Python through the firewall for **Private networks** only on the first `--https` run. The server is at `https://<LAN-IP>:8443`. The script creates certificates but never touches the trust store (`mkcert -CAROOT` shows the CA folder).
 
-The HTTPS server is at `https://<LAN-IP>:8443`. The script creates certificates but never touches the trust store itself. Show the CA folder with `mkcert -CAROOT`.
+1. Optionally `mkcert -install` on the laptop.
+2. Transfer only **rootCA.pem** to the phone; never `rootCA-key.pem` or `.certs/lan-key.pem`.
+3. iPhone: install the profile, enable full trust in Settings → General → About → Certificate Trust Settings, open the HTTPS URL in Safari, allow the camera (and the microphone for teaching).
+4. Windows: import the CA into Trusted Root Certification Authorities, open the URL, run real NVDA.
+5. Recreate certificates when the laptop IP changes. Use the team's private network. Uvicorn runs with `--no-proxy-headers`: guide access checks the real socket address, never `X-Forwarded-For`.
 
-1. Install the CA on the laptop for a trusted local browser: `mkcert -install` (the OS may ask for admin rights).
-2. Transfer only **rootCA.pem** to the iPhone/Windows machine. Never transfer `rootCA-key.pem` or `.certs/lan-key.pem`.
-3. iPhone: install the certificate profile, then enable full trust in Settings → General → About → Certificate Trust Settings. Open the HTTPS URL in Safari, grant camera; also try Add to Home Screen.
-4. Windows: import the CA into the demo account's Trusted Root Certification Authorities, open the HTTPS URL and run real NVDA.
-5. When the laptop IP changes, recreate certificates for the new IP. Use the team's private network. Run Uvicorn with `--no-proxy-headers`: ingest checks the loopback socket address and does not trust `X-Forwarded-For`.
-
-Camera needs a secure context per [MDN](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia). Device CA-trust steps follow [mkcert](https://github.com/FiloSottile/mkcert). Automated WebKit tests do not replace a real iPhone with Safari/VoiceOver.
+Camera and microphone need a secure context ([MDN](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)). Automated WebKit tests do not replace a real iPhone with Safari/VoiceOver.
 
 ## Teach and review
 
-`POST /ingest-video` accepts loopback calls from the laptop only. Multipart fields: `video` MP4, `route_id`, optional `transcript`. Limits: 120 MB / 180 seconds. Raw MOV from iPhone must be converted to MP4 first; never edit/delete the user's original:
+### Teaching on the guide's phone
+
+1. On the laptop set `TEACH_PIN=<4+ characters>` in `.env` and restart. Without it, only the laptop itself (loopback) can use `/guide/*` and `/ingest-video`. Anyone on the network with the code can teach and publish — use the team's private network.
+2. On the phone open `https://<LAN-IP>:8443/#/teach` (**Teach a route**) and enter the guide code (kept in the tab's sessionStorage).
+3. Fill in **Starting place** and **Destination**, tick "Everyone in view agreed to be filmed.", tap **Record** ("Recording started."). Hold the phone at chest height and say every movement ("turn right", "turn around", "go through the door"), name places as you reach them ("this is the lift"), warn about doors and steps. Up to ~3 minutes (stops itself at 2:50). The optional "Also transcribe my voice on this phone" sends the browser's own transcript as a backup when the laptop cannot transcribe.
+4. **Stop and learn**: the walk uploads with a progress bar, "Learning." is spoken and the laptop learns in the background (`POST /guide/teach` → 202 with `job_id`; the page polls `GET /guide/teach/{job_id}` every 1.5 s). Then "Route learned." and "N places remembered". Temporary video, speech and frames are deleted when the job ends, also on errors. The route ID comes from the two place names (`lift-lobby-to-meeting-room-v1`, then `-v2`…).
+5. **Review and publish** (`#/review/<id>`): the form is prefilled with the AI's suggestions (landmark names, sign text, features, walking time, hazards, arrival sentence). Correct everything, add or remove warnings (up to 3 per step), tick "I walked this route…" and "The route ends outside the destination’s door or sign…", enter the reviewer's name and tap **Publish route**. Problems are shown per field; publishing refuses a checkpoint whose evidence equals the point before it (two doors with the same logo would be "reached" at once). Speech is generated 6 sentences at a time; a two-step route takes about 15–30 s.
+
+Phones record MP4 (Safari) or WebM (Chrome); the laptop accepts MP4, MOV and WebM (WebM recordings have no duration header, so it is measured). Limits: 120 MB, 180 s. At most 48 evenly spaced frames go to the VLM in one call. Real run on 23/09: a 37 s, 720p (12 MB) walk learned in ~63 s on the Windows laptop.
+
+### Teaching on the laptop (CLI / HTTP)
+
+`POST /ingest-video` (multipart `video`, `route_id`, optional `transcript`) accepts the laptop itself or the guide code. Convert raw iPhone MOV if needed, never editing the original:
 
 ```bash
 ffmpeg -i input.MOV -map 0:v:0 -map '0:a:0?' -c:v libx264 -crf 23 -c:a aac output.mp4
-```
-
-A local CLI can replace HTTP:
-
-```bash
 cd apps/server
-uv run python -m navigation.teach_cli /absolute/path/output.mp4 --route-id lift-to-toilet-v2
-# With a hand-edited transcript:
-uv run python -m navigation.teach_cli /absolute/path/output.mp4 \
-  --route-id lift-to-toilet-v3 --transcript /absolute/path/transcript.json
+uv run python -m navigation.teach_cli /absolute/path/output.mp4 --route-id lift-to-toilet-v3 \
+  [--transcript /absolute/path/transcript.json]
 ```
 
-Transcript accepts text or JSON `[{"start":0,"end":8,"text":"..."}]`, seconds counted from the start of the input video/clip. Frames at ~1 fps, long edge 640. `faster-whisper base.en` runs on CPU; the model download needs network on first run. Keyframes are sent to the provider unchanged. Auto transcripts can be wrong, especially with echo/accents; the reviewer must fix them. A `voice_cue` with no matching transcript quote is deleted.
+A transcript is text or JSON `[{"start":0,"end":8,"text":"..."}]` in seconds from the start of the clip. `faster-whisper base.en` runs on CPU (model download on first run). Auto transcripts can be wrong; a `voice_cue` without a matching transcript quote is dropped.
 
-Results land in `data/runtime/drafts/<route-id>/`:
+Drafts land in `data/runtime/drafts/<route-id>/`:
 
-- `route.json`: matches the schema `{route_id, steps[{id,instruction,landmark,voice_cue}]}`.
-- `review.json`: fix origin, `required_text`, `required_features`, questions, arrival; confirm `destination_is_exterior`.
-- `transcript.json`: check timestamps and speech.
-- `teach-log.json`: build-timestamp recap; marked pre-recorded.
+- `route.json`: `{route_id, steps[{id,instruction,landmark,voice_cue}]}`.
+- `review.json`: a skeleton with blank `short_name`/`expected_seconds`, so `prepare` refuses it until a person fills it in (the Review page does this from the suggestions).
+- `suggestions.json`: the AI's reading — place names, landmark names, sign text, features, when each landmark is closest, hazards per step. Only ever used to prefill the form.
+- `transcript.json`, `teach-log.json`.
 
-The reviewer checks order, left/right turns, floor signs, fixed landmarks, quotes and the outside-toilet endpoint. `instruction` always goes from the previous confirmed point to the landmark of the **current step**. After approval:
+`review.json` may add `destination_label` (the name in the route list, e.g. `Meeting room`) and per-checkpoint `hazards`: `kind` (`glass-door`, `automatic-door`, `door`, `stairs`, `step`, `narrow`, `other`), `warning` (spoken with the chime), optional `action` (how to pass it) and 1–3 `features` the camera should see. Describe the hazard as it really looks: "frameless glass door" never fired on a framed door (see SUPER_FINAL).
+
+The reviewer checks order, left/right, floor signs, fixed landmarks, quotes and the exterior endpoint; `instruction` always goes from the previous point to the current step's landmark. Then:
 
 ```bash
-uv run python -m navigation.prepare ../../data/runtime/drafts/lift-to-toilet-v2 \
+uv run python -m navigation.prepare ../../data/runtime/drafts/lift-to-toilet-v3 \
   --reviewer "Reviewer name" --reviewed
 ```
 
-Prepare prebuilds Edge-TTS `en-US-AriaNeural`; it publishes via atomic rename only after all MP3s exist. It never overwrites a published version. A failed TTS never leaves a half-published route. When publishing a runtime draft, delete temp transcripts/drafts; keep the route, metadata, audio and timing log. Ingest temp video/audio/frames are deleted even on error. User-supplied source files and Drive downloads used for review are never auto-deleted by ingest; after review you may delete `data/runtime/source-media/` yourself.
+Prepare checks that no checkpoint looks like the point before it, builds every sentence from `phrases.py` (the single source of spoken text: 53 keys for a two-step route, plus `s{i}-watch`, `s{i}-hazard-{h}` and `s{i}-hazard-{h}-action` for hazards) and pre-generates one Edge-TTS `en-US-AriaNeural` MP3 per key, 6 at a time. It publishes with an atomic rename only after every MP3 exists, never overwrites a published version, and leaves nothing half-published when TTS fails. "Offline" teach only means preparing before the walk: VLM and Edge-TTS need the network.
 
-"Offline" teach means pre-walk replay preparation: VLM and Edge-TTS still need network. [faster-whisper](https://github.com/SYSTRAN/faster-whisper), [Edge-TTS](https://github.com/rany2/edge-tts).
+## Walk (replay)
 
-## Replay
+Realtime flow, details in `docs/superpowers/specs/2026-09-22-realtime-replay-design.md`:
 
-- Start requests the camera and unlocks one audio element.
-- Starting-point check captures 3 photos ~1 second apart, sending one request each; at least 2 must match plus user Yes before s1 starts. No Next at origin.
-- Checkpoint check sends one JPEG (long edge ≤640 px); Yes advances the step. The backend always reads the instruction from the reviewed route. Two consecutive non-matches open fallback; Next still needs its own Yes and counts as a manual override.
-- Every provider request has a 10-second server deadline; 503 is different from image mismatch. No hidden retries. Repeat only replays the MP3.
-- Stop/arrival stops the camera. Reload or backgrounding the app resets to origin. No offline localization, obstacle detection, or AI-generated directions during replay.
-- App voice can be muted to hear the screen reader; when Safari blocks audio, a Play instruction button appears. Voice command has a disclosure, push-to-talk and typed/button fallback; the mic never opens while app voice is playing. [WebKit](https://webkit.org/blog/6784/new-video-policies-for-ios/), [SpeechRecognition](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
+- **Choose a route:** the Walk page lists every route from `/catalog`; the phone remembers the choice and `?route=<id>` opens one directly. On arrival, **Continue your journey** offers every route that starts where this one ended (normalised place names); choosing one moves focus to Start, because the walker may need the lift first.
+- **Wear your phone:** shown before the first walk; *Play setup instructions* speaks the four steps; *I'm ready* hides it on this phone; *Phone setup* reopens it.
+- Start asks for the camera and unlocks one audio element and the chime. The capture loop sends JPEGs (long edge ≤640 px) to `/observe`: at most 2 in flight, ≥1 s apart; it pauses while waiting for Next or an override answer and stops on arrival, Stop, backgrounding or a lost camera track.
+- **Reached:** 2 of the last 3 successful results of the step are `matched`. The app says the "reached" sentence and **waits for Next** (88 px button or "next"). Next means ready, not verified. `candidate` only produces hints about where the landmark is in the frame ("Possible office sign, ahead, slightly left."), never a turn instruction, ≥8 s apart (≥3 s if the position changed).
+- **Lost:** the step clock starts when its direction has been heard; after `max(3 × expected_seconds, 30 s)` the app says "lost" and keeps looking. Next then offers the override; Yes counts as `manual_override`. No override at the starting point, which is repeated once after 30 s.
+- **Vision down:** 3 errors in a row or offline → spoken notice, back-off 3 → 5 → 10 s, Next offers the override (not at the origin); one success says "Camera check is back."
+- **Route hazards:** a step with hazards adds "On the way: a glass door." after its direction. `/observe` returns `hazards` (IDs of that step's reviewed hazards only). The first time one is close ahead: chime, amber banner and the warning (P0), then how to pass it (P1, what Repeat replays). Once per hazard per step.
+- **Obstacle alerts on the phone:** MediaPipe EfficientDet-Lite0 runs on the camera video 4 times a second while searching (origin, walking, lost), never uploading anything. A person in the middle 40% of the frame, at least 40% of its height, score ≥0.45, in 2 frames in a row → chime, red banner, "Be careful. Someone is in front of you." (P0, interrupts). An object (chair, couch, bench, suitcase, bicycle, motorcycle, potted plant, table, dog) must be centred, low in the frame and seen in 3 frames → "Be careful. Something is in your path." The same kind is not spoken again within 8 s; after 1.5 s without it, "Warning ended." (never "path clear"). *Obstacle alerts* switches it off per phone.
+- Always available: Where am I, Repeat, Stop; push-to-talk commands `next`, `yes`, `no`, `repeat`, `where` / `where am I`, `stop`; a typed command box. Opening the mic silences the app.
+- One audio queue: P0 (obstacle and hazard warnings) plays at once with a WebAudio chime (plus vibration on Android) and puts an interrupted P1 back at the front; P1 (everything except hints) is never dropped; P2 (hints) is dropped when busy or listening. With App voice off, P0 is a `role="alert"`, P1 the main polite live region, hints a separate one. When Safari blocks audio, a Play instruction button appears and the step clock still runs.
+- Reload or backgrounding resets to the starting point. No offline localisation and no AI-written directions; obstacle and hazard warnings are aids that can miss things.
 
-`/replay`: `{route_id,step_index,image_jpeg_640}` → `{matched,instruction,checkpoint_question,audio_url}`. Origin index is `-1`. 404: route not published; 422: bad payload/index/JPEG; 503: provider/timeout. Error responses never echo base64. Replay images are never stored. The service worker precaches the app shell only, never API, images or audio.
+API:
 
-## Surveyed models and costs
+- `POST /observe` `{route_id, step_index, image_jpeg_640}` → `{step_index, target, position, distance, hazards}`. `matched` needs the full reviewed evidence (`Evidence.supports`); `candidate` means something could be the landmark; otherwise `none` with null position/distance. Origin is `-1`. 404 unknown route; 422 bad payload/index/JPEG (never echoed); 503 `Visual check unavailable` (provider error or 10 s) or `Visual check busy` (4 in flight). Photos are never stored.
+- `GET /speech/{route_id}/{key}.mp3`: only keys in the route's reviewed `phrases`; published MP3, else the TTS cache, else Edge-TTS once (5 s timeout); never writes into the route folder.
+- `GET /routes/{route_id}/assets` → `{origin_label, destination_label, sample, steps[{short_name, expected_seconds, hazards}], phrases}`. `GET /catalog` → every route with `origin_label`, `destination_label`, `origin_place`, `destination_place`, step and hazard counts. `/routes` and `/health` unchanged.
+- `GET /app-phrases`, `GET /app-speech/{key}.mp3`: the app's fixed sentences (setup, obstacle alerts, teaching).
+- `/guide/*` (laptop, or header `X-Teach-Pin`): `GET /guide/access`, `POST /guide/teach`, `GET /guide/teach/{job}`, `GET /guide/drafts`, `GET|DELETE /guide/drafts/{id}`, `POST /guide/drafts/{id}/publish` with `{route, review, reviewer, confirmed: true}` (422 with `fields[{field, message}]`, never echoing the input).
+- `/models/` and `/mediapipe/` are cacheable for a day; every API response stays `no-store`. The service worker precaches the app shell only.
 
-**Updated 22/09/2026:** uses `deepseek-v4.1-flash` via OpenCode Go per the user's choice. Keep the replay deadline at 10 s server / 12 s browser; real-provider test results are recorded in `docs/PROTOTYPE_VERIFICATION.md`. [DeepSeek JSON Output](https://api-docs.deepseek.com/guides/json_mode/) uses `json_object`, so the model cannot be renamed inside the old MiMo adapter. Final results always pass schema/evidence checks and wait for user confirmation.
+## Models and costs surveyed
 
-Surveyed before switching to DeepSeek:
+**Updated 22/09/2026:** `deepseek-v4.1-flash` via OpenCode Go. Keep the `/observe` deadline at 10 s server / 12 s browser. [DeepSeek JSON Output](https://api-docs.deepseek.com/guides/json_mode/) uses `json_object`. Results always pass schema/evidence checks before use.
 
-[OpenCode Go](https://opencode.ai/docs/go/) on 21/09/2026 listed MiMo V2.5 at $0.14 input / $0.28 output and Muse Spark 1.3 Contributor at $0.10 / $0.20 per 1M tokens. `/models` returned MiMo V2.5, no MiMo v3 seen. V2.5 read images/JSON in a small probe, but latency missed the target. Go targets coding-agent traffic; demo access is no guarantee of production service. Muse Contributor allows prompts/completions to be used for training, so it must not be swapped into the MiMo consent. Muse probes in-session used synthetic text-sign images only.
-
-[Codex non-interactive](https://learn.chatgpt.com/docs/non-interactive-mode) supports images via CLI plus `--output-schema`, reusing the CLI login. It may support demo prep/evaluation. The prototype does not embed a Codex agent in the replay endpoint; CLI latency was never measured, and login tokens are never harvested to fake an API key.
-
-Gemini uses the SDK and [structured output](https://ai.google.dev/gemini-api/docs/structured-output). `VLM_MODEL` stays configurable; changing models requires re-evaluation. Do not infer cloud retention policy from the app not keeping images.
+Before DeepSeek: [OpenCode Go](https://opencode.ai/docs/go/) listed MiMo V2.5 ($0.14/$0.28 per 1M tokens) and Muse Spark 1.3 Contributor ($0.10/$0.20); MiMo read images but missed the latency target, and Muse Contributor allows training on prompts, so it must not be swapped in under the same consent. Gemini uses the SDK with [structured output](https://ai.google.dev/gemini-api/docs/structured-output); changing models requires re-evaluation.
 
 ## Testing and metrics
 
@@ -126,30 +139,25 @@ npx playwright install chromium webkit
 npm run test:e2e
 ```
 
-E2E uses a synthetic camera + mocked API. It says nothing about landmark accuracy. Playwright WebKit **on Windows** has no `MediaStream`, so 5 camera journeys self-skip with a stated reason; run on macOS/Linux for full WebKit.
+E2E uses a synthetic camera and a mocked API. `replay.spec.ts`: whole route, lost via `page.clock` then override, vision down and recovery, no override at the origin, Stop during a request, backgrounding/reload, no requests while waiting for Next, axe at every state. `journeys.spec.ts`: route choice and the next leg, hazard warnings, Wear your phone, teaching (guide code, record, learning, places remembered), review and publish. `obstacles.spec.ts` feeds the team's corridor footage into the real detector as the camera; it needs `data/runtime/verify/collision.mp4` (an H.264 cut of the corridor clip, see SUPER_FINAL) and skips without it. Playwright WebKit **on Windows** has no `MediaStream`, so camera journeys skip there; run on macOS/Linux for full WebKit.
 
-Check the **real build** (real FastAPI server, real `dist`, published route and real Edge-TTS MP3s; only `/replay` is mocked so no key needed): requires `npm run build` and the published `lift-lobby-to-toilet-v1` route. The command auto-starts uvicorn on port 8000 or reuses a running server. It checks every MP3, that the service worker caches no audio/API/model, the origin → checkpoint → fallback → override → arrival walk, and runs axe at each phase. Switch routes with `DEMO_ROUTE_ID=<route-id>`.
+`npm run test:real` uses the real server and build with only `/observe` mocked: every phrase MP3 of the demo route, the service worker precache, the walk through origin → hint → reached → Next → lost → override → unverified arrival with axe, the catalog, the app speech, the detector model and runtime headers, and guide access. It reuses a server already on port 8000. Switch the walked route with `DEMO_ROUTE_ID=<route-id>`.
 
-```bash
-cd apps/web
-npm run test:real
-```
-
-Download session metrics in the UI, then:
+Session metrics (JSON `kind: "offixed-replay-session", version: 2`) include `hazard` and `obstacle` events besides `start`, `origin_found`, `reached`, `next`, `lost`, `where`, `manual_override`, `vision_down`, `vision_back`, `arrival`, `stop` and a `step_summary` per step:
 
 ```bash
-python3 scripts/metrics.py session1.json session2.json session3.json
-# Windows: uv run --project apps/server python scripts/metrics.py session1.json ...
+uv run --project apps/server python scripts/metrics.py session1.json session2.json
 ```
 
-Real-VLM evaluation uses a local manifest with `id`, `image`, `expected` and `checkpoint` cases per the metadata schema; minimum three fresh images per landmark, ten negatives, and true/false origin. `image` is a path relative to the manifest. Never commit real images.
+Real-VLM evaluation uses a local manifest: each case has `id`, `image` (relative to the manifest), `expected`, and either an inline `checkpoint` or `step_index` with `--route <route_id>`; add `expected_hazards` (IDs that should be seen, or `[]`) to measure hazards. At least three fresh images per landmark and ten negatives. Never commit real images.
 
 ```bash
 cd apps/server
-uv run python -m navigation.evaluate /private/eval/cases.json --output /private/eval/results.json
+uv run python -m navigation.evaluate /private/eval/cases.json --output /private/eval/results.json \
+  --route lift-lobby-to-toilet-v2
 ```
 
-This downsizes images to long edge ≤640 px, JPEG quality 85 like the web app, then calls the configured provider, at most one call per case. Report false positives with a separate negative set; keep timeouts/errors in the results. UI metrics are operational numbers only, never a substitute for ground truth or real walks.
+Images are reduced like the app sends them (long edge ≤640 px, JPEG 85), one provider call per case, classified exactly like `/observe`. The summary reports `true_positives`, `false_positives`, candidate rates, `hazard_hits`, `hazard_false_alarms`, `p50_ms`, `p95_ms` and `errors`. Results: `data/runtime/deepseek-observe-eval-2026-09-22.json` (toilet route) and `data/runtime/deepseek-super-final-eval-2026-09-23.json` (the two new routes). UI metrics are operational numbers, never a substitute for real walks.
 
 ## Credit
 

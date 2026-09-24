@@ -1,0 +1,17 @@
+{
+  "route_id": "lift-lobby-to-meeting-room-v1",
+  "steps": [
+    {
+      "id": "s1",
+      "instruction": "Turn around, so the lift is behind you. Walk straight ahead to the glass door.",
+      "landmark": "Glass door with a printed Classroom access hours sheet",
+      "voice_cue": ""
+    },
+    {
+      "id": "s2",
+      "instruction": "Push the door open and go through. Continue straight along the corridor beside the staircase. The meeting room is on your right.",
+      "landmark": "Room sign 2 3 001 with a Classroom nameplate beside the door",
+      "voice_cue": ""
+    }
+  ]
+}

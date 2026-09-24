@@ -38,25 +38,32 @@ data/runtime/*
 .certs/
 *.tsbuildinfo
 
-# Reviewed demo handoff: only this published route, its generated speech and
-# one sanitized result file are shared. Other runtime data stays local.
+# Reviewed demo handoff: only this published route, its generated speech (one MP3
+# per phrase key) and sanitized result files are shared. Other runtime data stays local.
 !data/runtime/routes/
 data/runtime/routes/*
-!data/runtime/routes/lift-lobby-to-toilet-v1/
-data/runtime/routes/lift-lobby-to-toilet-v1/*
-!data/runtime/routes/lift-lobby-to-toilet-v1/route.json
-!data/runtime/routes/lift-lobby-to-toilet-v1/published.json
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/
-data/runtime/routes/lift-lobby-to-toilet-v1/audio/*
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/origin.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/origin-retry.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/s0-instruction.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/s0-question.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/s1-instruction.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/s1-question.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/fallback-0.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/fallback-1.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/fallback-2.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/override.mp3
-!data/runtime/routes/lift-lobby-to-toilet-v1/audio/arrival.mp3
+!data/runtime/routes/lift-lobby-to-toilet-v2/
+data/runtime/routes/lift-lobby-to-toilet-v2/*
+!data/runtime/routes/lift-lobby-to-toilet-v2/route.json
+!data/runtime/routes/lift-lobby-to-toilet-v2/published.json
+!data/runtime/routes/lift-lobby-to-toilet-v2/audio/
+!data/runtime/routes/lift-lobby-to-toilet-v2/audio/*.mp3
+!data/runtime/routes/entrance-to-lift-lobby-v1/
+data/runtime/routes/entrance-to-lift-lobby-v1/*
+!data/runtime/routes/entrance-to-lift-lobby-v1/route.json
+!data/runtime/routes/entrance-to-lift-lobby-v1/published.json
+!data/runtime/routes/entrance-to-lift-lobby-v1/audio/
+!data/runtime/routes/entrance-to-lift-lobby-v1/audio/*.mp3
+!data/runtime/routes/lift-lobby-to-meeting-room-v1/
+data/runtime/routes/lift-lobby-to-meeting-room-v1/*
+!data/runtime/routes/lift-lobby-to-meeting-room-v1/route.json
+!data/runtime/routes/lift-lobby-to-meeting-room-v1/published.json
+!data/runtime/routes/lift-lobby-to-meeting-room-v1/audio/
+!data/runtime/routes/lift-lobby-to-meeting-room-v1/audio/*.mp3
 !data/runtime/deepseek-route-smoke-2026-09-22.json
+!data/runtime/deepseek-super-final-eval-2026-09-23.json
+!data/runtime/deepseek-observe-eval-2026-09-22.json
+
+# On-device obstacle detector: copied from node_modules / downloaded by apps/web/scripts/obstacle-assets.mjs
+apps/web/public/mediapipe/
+apps/web/public/models/

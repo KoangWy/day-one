@@ -1,0 +1,17 @@
+{
+  "route_id": "entrance-to-lift-lobby-v1",
+  "steps": [
+    {
+      "id": "s1",
+      "instruction": "Walk straight along the corridor of display cases, then through the glass doors. They open by themselves. Stop at the ticket gates.",
+      "landmark": "Row of waist-high stainless-steel ticket gates in front of a grey tiled wall",
+      "voice_cue": ""
+    },
+    {
+      "id": "s2",
+      "instruction": "Go through the gates ahead. The lifts are on your left, past the gates. Stop facing the lift doors.",
+      "landmark": "Stainless-steel lift doors beside an IN CASE OF FIRE DO NOT USE ELEVATOR sign",
+      "voice_cue": ""
+    }
+  ]
+}

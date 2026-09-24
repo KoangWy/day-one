@@ -2,9 +2,47 @@
 
 # Prototype verification — test results and known limits
 
-Internal note. Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE. Added 22/09/2026: §1c records the real DeepSeek `/replay` smoke on frames of the reviewed route video; §1d records the Windows re-run after the capture change. Canonical backend command is now `uv run python -m pytest -q` (the plain `uv run pytest -q` launcher errored on this machine).
+## S. Branch `super-final-project` (23/09/2026, Windows laptop)
+
+Full write-up with the video → feature map: [SUPER_FINAL.md](SUPER_FINAL.md#verification-23092026-windows-laptop). Only what actually ran:
+
+- **Automated:** server 133 pytest + ruff clean; web 75 vitest (incl. a replay of detector output recorded from the team's footage); Playwright e2e 12/12 on Chromium, WebKit on Windows skips camera journeys (2 non-camera journeys pass); `test:real` 5 pass, 1 WebKit skip.
+- **Obstacle alerts, real detector on footage:** corridor clip — one "someone is in front of you" at 7.25 s, ~4 s before the colleague passes; lift lobby → meeting room clip — no alert (a sofa behind a glass wall was flagged before tuning). ~100 ms per frame on the laptop CPU in Chromium; the full app path (footage as camera → detector → banner → spoken warning → "Warning ended.") passes in e2e. Not measured on an iPhone.
+- **New routes, DeepSeek V4.1 Flash, tonemapped footage frames:** entrance → lift lobby 9/11 matched, 0 false matches, automatic-door warning 3/3 close (+1 early at ~5 m); lift lobby → meeting room 8/9, 0 false matches, glass-door warning 3/3 after correcting the hazard description. p50 2.5–3.0 s. `data/runtime/deepseek-super-final-eval-2026-09-23.json`.
+- **Teach from a phone-sized recording:** 37 s, 720p, 12 MB → learned in ~63 s (FFmpeg via imageio-ffmpeg, Whisper base.en, one DeepSeek draft). The draft repeated the start's evidence at step 1; publishing now refuses that, and the Review page showed the error.
+- **Still open:** the on-site iPhone + VoiceOver walk of all three routes with obstacle and hazard warnings.
+
+Internal note. **§0 covers branch `feat/realtime-replay`.** Updated after the 21/09/2026 implementation session and the 21/09/2026 evening re-run on the Windows laptop (§1b). Only records what was actually run; anything not done is marked NOT DONE. Added 22/09/2026: §1c records the real DeepSeek `/replay` smoke on frames of the reviewed route video; §1d records the Windows re-run after the capture change. Canonical backend command is now `uv run python -m pytest -q` (the plain `uv run pytest -q` launcher errored on this machine).
 
 Locked demo route: **Lift lobby → Toilet, 2 checkpoints** (`lift-lobby-to-toilet-v1`). Approved exception to the Tier A spec's 4–5 text-sign requirement (`docs/brainstorm/specs/2026-09-21-unified-day1-nav-design.md:18-24`): accepts both text signs and wheelchair pictograms plus physical features. The `route.json` schema is unchanged.
+
+## 0. Branch `feat/realtime-replay` (22/09/2026, Windows laptop)
+
+This branch replaces the Check/Yes replay with the realtime flow of `docs/superpowers/specs/2026-09-22-realtime-replay-design.md` (plan: `docs/superpowers/plans/2026-09-22-realtime-replay-plan.md`). Sections 1–5 below describe the old flow and route v1 on `main`; they are kept as history. Environment: Windows 11, Git Bash, Node 24, Python 3.11 venv made by uv 0.12.17 (`uv` itself is not on PATH on this laptop, so commands ran through `apps/server/.venv/Scripts/python.exe`), Playwright Chromium + WebKit.
+
+| Check | Command | Actual result |
+|---|---|---|
+| Backend | `cd apps/server && uv run python -m pytest -q` | **95 passed** (classification, `/observe` busy at 5 concurrent, `/speech` key allowlist, traversal, cache generated once for 2 concurrent requests, TTS failure 503 without writing into the route, 53 phrases/MP3s, publish refuses blank `short_name`/`expected_seconds`, teach skeleton unpublishable, DeepSeek JSON-mode schema and bad enums, `evaluate`, `scripts/metrics.py` v2) |
+| Backend lint | `uv run ruff check navigation tests` (+ `scripts/metrics.py`) | **All checks passed** |
+| Frontend unit | `cd apps/web && npm test` | **56 passed**: machine 36, voice 9, frameLoop 8, hints 3 |
+| Frontend build | `npm run build` | pass, PWA `generateSW`, 11 precache entries (264.90 KiB) |
+| Mock E2E | `npm run test:e2e` | Chromium **6/6 passed**: whole route with hint, focus on Next, 88 px Next and axe in every state; lost via `page.clock` → override No/Yes → metrics v2 download with `manual_override`; vision down after 3 errors → recovery; no override at origin; Stop drops a late result; background/reload reset. No `/observe` request while waiting for Next. WebKit 6 skipped (Windows WebKit has no `MediaStream`; idle-screen axe runs before the skip) |
+| Real-build E2E | `npm run test:real` | Chromium **2/2 passed**: all 53 phrase keys served as `audio/mpeg` by the real `/speech`, unknown key 404, service worker never caches `/speech`/API; real-audio walk origin → hint → reached → Next → lost → override → unverified arrival with axe at every phase and only reviewed phrase audio fetched. WebKit 1 passed, 1 skipped. Only `/observe` mocked |
+| Route publish | `uv run python -m navigation.prepare ../../data/examples/lift-lobby-to-toilet-v2 --reviewer "…" --reviewed` | Published `lift-lobby-to-toilet-v2`, `sample=False`, **53 phrases / 53 MP3s** (1.5 MB), about 2.5 min with real Edge-TTS |
+
+**Real DeepSeek `/observe` evaluation** (`data/runtime/deepseek-observe-eval-2026-09-22.json`, 26 frames of `IMG_7545/7546/7548.MOV`, ≤640 px JPEG q85 as the web app sends; frames are team footage, not new on-site photos):
+
+| Group | n | Result |
+|---|---|---|
+| Positives (origin 4, office 4, toilet 5; include far frames office 20.0 s and toilet 24.0 s) | 13 | 12 `matched`, 1 `candidate` (office 20.5 s, `left`/`far`) |
+| Negatives (in-lift display "3", ground-floor lift lobby ×2, office frame for origin/toilet, lobby sofas, toilet frame for office, a different office sign, sofas on another floor, ground-floor entrance, a single wheelchair sign at the turnstiles, floor-3 lobby, glass corridor) | 13 | **0 false positives**; 11 `none`, 1 `candidate` (sofas/glass rooms on another floor, `ahead`/`far`), 1 error |
+| Latency | 25 answered | p50 **3.2 s**, p95 **7.4 s** |
+
+The one error was the 10 s provider deadline on the "different office sign" frame (10 032 ms); re-running that frame returned `target_visible=false` (`none`). Reported `position` values match the footage: office sign `left`, toilet entrance `right`/`ahead`, floor numeral `ahead`.
+
+**Simulated walk with live DeepSeek** (one-off rehearsal, not a committed test): the real build and real server with the real provider, the synthetic camera replaying `IMG_7546.MOV` frames every 0.5 s at video speed and holding the last frame, App voice off. Origin was found 6.1 s after Start. After Next, the office checkpoint was announced **9.8 s** after the first frame where the sign is readable (20.5 s): results after that frame were `none` (+1.9 s, likely an older frame), `none` (+5.2 s), `matched` (+6.0 s), `matched` (+9.4 s); the held 21.0 s frame shows only part of the sign, so the model was not stable on it. The toilet was announced **6.0 s** after the 25.5 s frame. Result spacing was about 1.5–3.5 s, which is what 2 requests in flight give at 3–4 s per request. A second run held the 20.75 s frame, where the walker stands beside the office sign as the direction says. Office **11.3 s**, toilet **7.5 s**: DeepSeek was slower (step p50 about 5.3 s per request), the two in-flight requests drifted into pairs about 5–6 s apart, and the 20.75 s frame came back `candidate` twice before `matched` twice (the simulation JPEG-encodes twice; a real camera frame is encoded once). The metrics file exported by the app from this run was read correctly by `scripts/metrics.py` (version 2, 2 `reached`, 1 verified arrival, 15 frames, 0 errors); it was not committed because a simulated walk must not be counted as a field route. Conclusion: with 2 matches needed and 2 requests in flight, "reached ≤6 s" holds only when the provider answers in about 3 s. This supports the spec's risk "reached 3–6 s late": tune the window and pacing (and check provider latency on the day) after the real walk.
+
+**NOT DONE — needs people and the corridor (spec §12.4):** iPhone Safari + VoiceOver walk lift lobby → toilet with DeepSeek, both checkpoints without override, no wrong "reached", reached ≤6 s after the landmark is clearly in frame (screen recording + metrics), metrics v2 file with notes for any override. Checklist: `docs/DEMO_HANDOFF.md` §2a. Automated WebKit and axe runs do not replace VoiceOver on a real iPhone.
 
 ## 1. Passed on 21/09/2026 (current dev environment)
 

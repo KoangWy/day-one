@@ -1,0 +1,17 @@
+{
+  "route_id": "lift-lobby-to-toilet-v2",
+  "steps": [
+    {
+      "id": "s1",
+      "instruction": "From the lift lobby, follow the corridor toward the end window. Stop beside the glass frontage marked Office for Research & Innovation on your left.",
+      "landmark": "Office for Research & Innovation sign on the glass frontage beside the corridor",
+      "voice_cue": ""
+    },
+    {
+      "id": "s2",
+      "instruction": "Continue along the same corridor to the toilet entrance on your right, marked by wheelchair symbols beside a louvered door. Stop outside the entrance.",
+      "landmark": "Two wheelchair symbols on wood paneling beside the louvered toilet entrance",
+      "voice_cue": ""
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "tested_at": "2026-09-22",
+  "kind": "observe_frame_evaluation",
+  "branch": "feat/realtime-replay",
+  "fresh_field_test": false,
+  "route_id": "lift-lobby-to-toilet-v2",
+  "source": "Frames of IMG_7545/7546/7548.MOV (team footage, not new on-site photos), longest edge <=640, JPEG quality 85 as the web app sends. Positives include far frames (office 20.00 s, toilet 24.0 s). Hard negatives: in-lift floor display 3, ground-floor lift lobby, a different office sign, a single wheelchair sign at the turnstiles.",
+  "command": "uv run python -m navigation.evaluate cases.json --output results.json --route lift-lobby-to-toilet-v2",
+  "provider": "OpenCode Go / DeepSeek V4.1 Flash",
+  "n": 26,
+  "positive_n": 13,
+  "negative_n": 13,
+  "true_positives": 12,
+  "false_positives": 0,
+  "candidate_rate_positive": 0.077,
+  "candidate_rate_negative": 0.083,
+  "errors": 1,
+  "p50_ms": 3203,
+  "p95_ms": 7421,
+  "results": [
+    {
+      "id": "origin:IMG_7546-012.0s",
+      "expected": true,
+      "step_index": -1,
+      "target": "matched",
+      "position": "ahead",
+      "distance": "near",
+      "latency_ms": 2953
+    },
+    {
+      "id": "origin:IMG_7546-012.5s",
+      "expected": true,
+      "step_index": -1,
+      "target": "matched",
+      "position": "ahead",
+      "distance": "near",
+      "latency_ms": 3172
+    },
+    {
+      "id": "origin:IMG_7546-013.0s",
+      "expected": true,
+      "step_index": -1,
+      "target": "matched",
+      "position": "ahead",
+      "distance": "near",
+      "latency_ms": 5859
+    },
+    {
+      "id": "origin:IMG_7546-014.0s",
+      "expected": true,
+      "step_index": -1,
+      "target": "matched",
+      "position": "left",
+      "distance": "near",
+      "latency_ms": 5188
+    },
+    {
+      "id": "office:IMG_7546-20.00s",
+      "expected": true,
+      "step_index": 0,
+      "target": "matched",
+      "position": "left",
+      "distance": "near",
+      "latency_ms": 5046,
+      "note": "sign far, text small"
+    },
+    {
+      "id": "office:IMG_7546-20.50s",
+      "expected": true,
+      "step_index": 0,
+      "target": "candidate",
+      "position": "left",
+      "distance": "far",
+      "latency_ms": 4860
+    },
+    {
+      "id": "office:IMG_7546-20.75s",
+      "expected": true,
+      "step_index": 0,
+      "target": "matched",
+      "position": "left",
+      "distance": "near",
+      "latency_ms": 4937
+    },
+    {
+      "id": "office:IMG_7546-21.00s",
+      "expected": true,
+      "step_index": 0,
+      "target": "matched",
+      "position": "left",
+      "distance": "near",
+      "latency_ms": 5453
+    },
+    {
+      "id": "toilet:IMG_7546-024.0s",
+      "expected": true,
+      "step_index": 1,
+      "target": "matched",
+      "position": "right",
+      "distance": "near",
+      "latency_ms": 3329,
+      "note": "entrance ahead, signs small"
+    },
+    {
+      "id": "toilet:IMG_7546-025.5s",
+      "expected": true,
+      "step_index": 1,
+      "target": "matched",
+      "position": "right",
+      "distance": "near",
+      "latency_ms": 2484
+    },
+    {
+      "id": "toilet:IMG_7546-027.0s",
+      "expected": true,
+      "step_index": 1,
+      "target": "matched",
+      "position": "ahead",
+      "distance": "near",
+      "latency_ms": 2984
+    },
+    {
+      "id": "toilet:IMG_7546-029.0s",
+      "expected": true,
+      "step_index": 1,
+      "target": "matched",
+      "position": "right",
+      "distance": "near",
+      "latency_ms": 3047
+    },
+    {
+      "id": "toilet:IMG_7546-031.0s",
+      "expected": true,
+      "step_index": 1,
+      "target": "matched",
+      "position": "ahead",
+      "distance": "near",
+      "latency_ms": 2703
+    },
+    {
+      "id": "not-origin:IMG_7545-035.0s",
+      "expected": false,
+      "step_index": -1,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 2453,
+      "note": "ground-floor lift lobby, no floor numeral"
+    },
+    {
+      "id": "not-origin:IMG_7545-045.0s",
+      "expected": false,
+      "step_index": -1,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 2875,
+      "note": "ground-floor lift lobby, no floor numeral"
+    },
+    {
+      "id": "not-origin:IMG_7546-003.0s",
+      "expected": false,
+      "step_index": -1,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 3188,
+      "note": "inside the lift; display shows 3"
+    },
+    {
+      "id": "not-origin:IMG_7546-20.75s",
+      "expected": false,
+      "step_index": -1,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 3094,
+      "note": "office sign frame"
+    },
+    {
+      "id": "not-office:IMG_7546-016.0s",
+      "expected": false,
+      "step_index": 0,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 5734,
+      "note": "lobby sofas"
+    },
+    {
+      "id": "not-office:IMG_7546-028.0s",
+      "expected": false,
+      "step_index": 0,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 5234,
+      "note": "toilet entrance frame"
+    },
+    {
+      "id": "not-office:IMG_7548-000.0s",
+      "expected": false,
+      "step_index": 0,
+      "error": "unavailable_or_invalid_case",
+      "latency_ms": 10032,
+      "note": "a different office sign (Dean of Students); the error was the 10 s provider deadline (10032 ms). A manual re-run of the same frame returned target_visible=false, i.e. none"
+    },
+    {
+      "id": "not-office:IMG_7548-004.0s",
+      "expected": false,
+      "step_index": 0,
+      "target": "candidate",
+      "position": "ahead",
+      "distance": "far",
+      "latency_ms": 8547,
+      "note": "sofas and glass rooms, other floor"
+    },
+    {
+      "id": "not-office:IMG_7545-010.0s",
+      "expected": false,
+      "step_index": 0,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 7421,
+      "note": "ground-floor entrance"
+    },
+    {
+      "id": "not-toilet:IMG_7545-023.0s",
+      "expected": false,
+      "step_index": 1,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 4844,
+      "note": "single wheelchair sign at turnstiles"
+    },
+    {
+      "id": "not-toilet:IMG_7546-013.0s",
+      "expected": false,
+      "step_index": 1,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 3203,
+      "note": "floor 3 lift lobby"
+    },
+    {
+      "id": "not-toilet:IMG_7548-016.0s",
+      "expected": false,
+      "step_index": 1,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 2969,
+      "note": "glass corridor, other floor"
+    },
+    {
+      "id": "not-toilet:IMG_7546-20.75s",
+      "expected": false,
+      "step_index": 1,
+      "target": "none",
+      "position": null,
+      "distance": null,
+      "latency_ms": 3047,
+      "note": "office sign frame"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "origin_label": "Lift lobby",
+  "origin_instruction": "Stand outside the lift. Point the camera at the large floor number 3 beside the lift doorway.",
+  "origin_retry": "I only know the saved route from the lift lobby to the meeting room. Please check the lift lobby again.",
+  "origin": {
+    "description": "Large number 3 on a white wall just outside a stainless-steel lift doorway",
+    "required_text": ["3"],
+    "required_features": [
+      "Large floor numeral on the white lobby wall beside the stainless-steel lift doorway"
+    ],
+    "short_name": "floor number 3"
+  },
+  "checkpoints": [
+    {
+      "description": "Glass door with a printed Classroom access hours sheet",
+      "required_text": ["access hours"],
+      "required_features": ["Printed timetable sheet fixed to a glass door"],
+      "short_name": "glass door",
+      "expected_seconds": 7,
+      "hazards": [
+        {
+          "kind": "glass-door",
+          "warning": "Be careful. A glass door is in front of you.",
+          "action": "Push the door open and go through.",
+          "features": ["Glass door with a printed sheet taped on it, directly ahead"]
+        }
+      ]
+    },
+    {
+      "description": "Room sign 2 3 001 with a Classroom nameplate beside the door",
+      "required_text": ["001", "Classroom"],
+      "required_features": ["Room number sign split into boxes reading 2, 3 and 001"],
+      "short_name": "meeting room sign",
+      "expected_seconds": 14
+    }
+  ],
+  "destination_label": "Meeting room",
+  "arrival": "You have arrived. The meeting room is on your right, room 2.3.001. Route finished. Camera stopped.",
+  "destination_is_exterior": true,
+  "sample": false
+}

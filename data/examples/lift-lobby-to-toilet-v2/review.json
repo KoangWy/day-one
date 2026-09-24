@@ -1,0 +1,41 @@
+{
+  "origin_label": "Lift lobby",
+  "origin_instruction": "Stand outside the lift. Point the camera at the large floor number 3 beside the lift doorway.",
+  "origin_retry": "I only know the saved route from the lift lobby to the toilet. Please check the lift lobby again.",
+  "origin": {
+    "description": "Large number 3 on a white wall just outside a stainless-steel lift doorway",
+    "required_text": [
+      "3"
+    ],
+    "required_features": [
+      "Large floor numeral on the white lobby wall beside the stainless-steel lift doorway"
+    ],
+    "short_name": "floor number 3"
+  },
+  "checkpoints": [
+    {
+      "description": "Office for Research & Innovation sign on the glass frontage beside the corridor",
+      "required_text": [
+        "Office for Research"
+      ],
+      "required_features": [
+        "The sign is on a glass office frontage beside the corridor"
+      ],
+      "short_name": "office sign",
+      "expected_seconds": 8
+    },
+    {
+      "description": "Two wheelchair symbols on wood paneling beside the louvered toilet entrance",
+      "required_text": [],
+      "required_features": [
+        "Two separate white signs bearing wheelchair pictograms are stacked vertically on wood paneling",
+        "A large pale louvered door is immediately beside those wheelchair signs"
+      ],
+      "short_name": "toilet entrance",
+      "expected_seconds": 10
+    }
+  ],
+  "arrival": "You have reached the outside of the toilet entrance. Route finished. Camera stopped.",
+  "destination_is_exterior": true,
+  "sample": false
+}

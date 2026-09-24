@@ -1,0 +1,150 @@
+{
+  "route": {
+    "route_id": "entrance-to-lift-lobby-v1",
+    "steps": [
+      {
+        "id": "s1",
+        "instruction": "Walk straight along the corridor of display cases, then through the glass doors. They open by themselves. Stop at the ticket gates.",
+        "landmark": "Row of waist-high stainless-steel ticket gates in front of a grey tiled wall",
+        "voice_cue": ""
+      },
+      {
+        "id": "s2",
+        "instruction": "Go through the gates ahead. The lifts are on your left, past the gates. Stop facing the lift doors.",
+        "landmark": "Stainless-steel lift doors beside an IN CASE OF FIRE DO NOT USE ELEVATOR sign",
+        "voice_cue": ""
+      }
+    ]
+  },
+  "review": {
+    "origin_label": "Main entrance",
+    "origin_instruction": "Stand just inside the main entrance, facing the corridor of display cases. Point the camera straight ahead.",
+    "origin_retry": "I only know the saved route from the main entrance to the lifts. Please face the corridor of display cases again.",
+    "origin": {
+      "description": "Corridor lined with glass display cases, with RMIT University glass doors at the far end",
+      "required_text": [],
+      "required_features": [
+        "Corridor lined on both sides with glass display cases holding garments",
+        "Glass doors with red RMIT University logos at the far end of the corridor"
+      ],
+      "short_name": "display corridor"
+    },
+    "checkpoints": [
+      {
+        "description": "Row of waist-high stainless-steel ticket gates in front of a grey tiled wall",
+        "required_text": [],
+        "required_features": [
+          "Row of waist-high stainless-steel ticket gates",
+          "Grey tiled wall with a wall-mounted TV screen behind the gates"
+        ],
+        "short_name": "ticket gates",
+        "expected_seconds": 15,
+        "hazards": [
+          {
+            "kind": "automatic-door",
+            "warning": "Be careful. Automatic door ahead.",
+            "action": "Keep going straight. It opens by itself.",
+            "features": [
+              "Glass doors across the corridor with red RMIT University logos"
+            ]
+          }
+        ]
+      },
+      {
+        "description": "Stainless-steel lift doors beside an IN CASE OF FIRE DO NOT USE ELEVATOR sign",
+        "required_text": [
+          "DO NOT USE ELEVATOR"
+        ],
+        "required_features": [
+          "Stainless-steel lift doors set in a grey tiled wall"
+        ],
+        "short_name": "lift doors",
+        "expected_seconds": 10,
+        "hazards": []
+      }
+    ],
+    "destination_label": "Lift lobby",
+    "arrival": "You have arrived at the lifts. The call button is on your right. Take the lift up to level 3. Route finished. Camera stopped.",
+    "destination_is_exterior": true,
+    "sample": false
+  },
+  "assets": {
+    "origin_label": "Main entrance",
+    "destination_label": "Lift lobby",
+    "sample": false,
+    "steps": [
+      {
+        "short_name": "ticket gates",
+        "expected_seconds": 15,
+        "hazards": [
+          "automatic-door"
+        ]
+      },
+      {
+        "short_name": "lift doors",
+        "expected_seconds": 10,
+        "hazards": []
+      }
+    ],
+    "phrases": {
+      "origin-instruction": "Stand just inside the main entrance, facing the corridor of display cases. Point the camera straight ahead.",
+      "origin-found": "Main entrance found. Tap Next or say next for the first direction.",
+      "origin-retry": "I only know the saved route from the main entrance to the lifts. Please face the corridor of display cases again.",
+      "origin-hint-candidate-left-far": "Possible display corridor, ahead, slightly left.",
+      "origin-hint-candidate-left-near": "Possible display corridor close, slightly left.",
+      "origin-hint-matched-left-far": "Display corridor, ahead, slightly left.",
+      "origin-hint-matched-left-near": "Display corridor close, slightly left.",
+      "origin-hint-candidate-ahead-far": "Possible display corridor, straight ahead.",
+      "origin-hint-candidate-ahead-near": "Possible display corridor close, straight ahead.",
+      "origin-hint-matched-ahead-far": "Display corridor, straight ahead.",
+      "origin-hint-matched-ahead-near": "Display corridor close, straight ahead.",
+      "origin-hint-candidate-right-far": "Possible display corridor, ahead, slightly right.",
+      "origin-hint-candidate-right-near": "Possible display corridor close, slightly right.",
+      "origin-hint-matched-right-far": "Display corridor, ahead, slightly right.",
+      "origin-hint-matched-right-near": "Display corridor close, slightly right.",
+      "s0-instruction": "Walk straight along the corridor of display cases, then through the glass doors. They open by themselves. Stop at the ticket gates.",
+      "s0-reached": "Ticket gates reached. Tap Next or say next when ready.",
+      "s0-lost": "I haven't found the ticket gates yet. Stop and turn slowly. Last passed: Main entrance.",
+      "s0-where": "Last passed: Main entrance. Heading to: ticket gates.",
+      "s0-override": "Continue using saved directions without the camera finding the ticket gates?",
+      "s0-hint-candidate-left-far": "Possible ticket gates, ahead, slightly left.",
+      "s0-hint-candidate-left-near": "Possible ticket gates close, slightly left.",
+      "s0-hint-matched-left-far": "Ticket gates, ahead, slightly left.",
+      "s0-hint-matched-left-near": "Ticket gates close, slightly left.",
+      "s0-hint-candidate-ahead-far": "Possible ticket gates, straight ahead.",
+      "s0-hint-candidate-ahead-near": "Possible ticket gates close, straight ahead.",
+      "s0-hint-matched-ahead-far": "Ticket gates, straight ahead.",
+      "s0-hint-matched-ahead-near": "Ticket gates close, straight ahead.",
+      "s0-hint-candidate-right-far": "Possible ticket gates, ahead, slightly right.",
+      "s0-hint-candidate-right-near": "Possible ticket gates close, slightly right.",
+      "s0-hint-matched-right-far": "Ticket gates, ahead, slightly right.",
+      "s0-hint-matched-right-near": "Ticket gates close, slightly right.",
+      "s0-watch": "On the way: an automatic door.",
+      "s0-hazard-0": "Be careful. Automatic door ahead.",
+      "s0-hazard-0-action": "Keep going straight. It opens by itself.",
+      "s1-instruction": "Go through the gates ahead. The lifts are on your left, past the gates. Stop facing the lift doors.",
+      "s1-lost": "I haven't found the lift doors yet. Stop and turn slowly. Last passed: ticket gates.",
+      "s1-where": "Last passed: ticket gates. Heading to: lift doors.",
+      "s1-override": "Continue using saved directions without the camera finding the lift doors?",
+      "s1-hint-candidate-left-far": "Possible lift doors, ahead, slightly left.",
+      "s1-hint-candidate-left-near": "Possible lift doors close, slightly left.",
+      "s1-hint-matched-left-far": "Lift doors, ahead, slightly left.",
+      "s1-hint-matched-left-near": "Lift doors close, slightly left.",
+      "s1-hint-candidate-ahead-far": "Possible lift doors, straight ahead.",
+      "s1-hint-candidate-ahead-near": "Possible lift doors close, straight ahead.",
+      "s1-hint-matched-ahead-far": "Lift doors, straight ahead.",
+      "s1-hint-matched-ahead-near": "Lift doors close, straight ahead.",
+      "s1-hint-candidate-right-far": "Possible lift doors, ahead, slightly right.",
+      "s1-hint-candidate-right-near": "Possible lift doors close, slightly right.",
+      "s1-hint-matched-right-far": "Lift doors, ahead, slightly right.",
+      "s1-hint-matched-right-near": "Lift doors close, slightly right.",
+      "arrival": "You have arrived at the lifts. The call button is on your right. Take the lift up to level 3. Route finished. Camera stopped.",
+      "arrival-unverified": "Saved route finished. The camera did not confirm the destination. Camera stopped.",
+      "vision-down": "Camera check is unavailable. Stop, or say next to continue with saved directions.",
+      "vision-down-origin": "Camera check is unavailable. Check the connection, or stop the route.",
+      "vision-back": "Camera check is back."
+    }
+  },
+  "reviewer": "Team Offixed footage 22/09 (drafted from video frames, DeepSeek-checked 23/09; on-site walk check pending)",
+  "approved_at": "2026-09-23T04:15:09.875771+00:00"
+}

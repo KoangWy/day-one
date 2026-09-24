@@ -1,5 +1,7 @@
 > [English](./PROTOTYPE_VERIFICATION.md) | **Tiếng Việt** (mặc định là tiếng Anh)
 
+> **Nhánh `super-final-project`:** bản tiếng Việt này dịch từ `main` và mô tả luồng Check/Yes cũ. Kết quả của replay realtime và các tính năng mới (cảnh báo vật cản, nguy hiểm theo tuyến, dạy tuyến bằng điện thoại, ba tuyến nối nhau) nằm ở bản tiếng Anh [PROTOTYPE_VERIFICATION.md](PROTOTYPE_VERIFICATION.md) (§S, §0) và [SUPER_FINAL.vi.md](SUPER_FINAL.vi.md).
+
 # Xác minh prototype — kết quả kiểm thử và giới hạn đã biết
 
 Ghi chú nội bộ. Cập nhật sau session triển khai ngày 21/09/2026 và lượt chạy lại buổi tối 21/09/2026 trên laptop Windows (§1b). Chỉ ghi những gì đã chạy thật; việc chưa làm được đánh dấu NOT DONE. Bổ sung 22/09/2026: §1c ghi smoke `/replay` DeepSeek thật trên frame của video tuyến đã duyệt; §1d ghi lượt chạy lại trên Windows sau thay đổi capture. Lệnh backend chuẩn hiện tại là `uv run python -m pytest -q` (lệnh trần `uv run pytest -q` bị lỗi launcher trên máy này).
