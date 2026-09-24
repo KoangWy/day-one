@@ -128,4 +128,4 @@ Kết quả đo và giới hạn: [kiểm chứng super final](docs/SUPER_FINAL.
 
 ## Giấy phép
 
-Chưa có file license — bảo lưu mọi quyền. Liên hệ nhóm nếu muốn tái sử dụng.
+[MIT](LICENSE) © 2026 Team Offixed. Cứ dùng lại, chỉnh cho văn phòng hay ngôn ngữ của bạn — và kể cho nhóm nghe bạn làm được gì nhé.

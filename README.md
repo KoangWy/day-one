@@ -128,4 +128,4 @@ Route teach-and-share inspired by [OCCAM Lab Clew](https://github.com/occamLab/C
 
 ## License
 
-No license file yet — all rights reserved. Contact the team if you want to reuse this work.
+[MIT](LICENSE) © 2026 Team Offixed. Reuse it, adapt it for your own office or language — and please tell us what you build.
