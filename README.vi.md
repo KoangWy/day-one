@@ -6,7 +6,7 @@ Prototype wayfinding trong nhà cho nhân viên khiếm thị trong những ngà
 
 Thay vì mô tả thế giới cho người khiếm thị, Day One sửa tuyến đường từ gốc: đồng nghiệp đi cùng một lần và nói hướng dẫn, một người duyệt từng chữ, và hôm sau nhân viên tự đi — camera tìm từng mốc, cảnh báo cửa và người phía trước, còn người đi tự quyết khi nào bước tiếp.
 
-> **Nhánh `super-final-project`.** Mọi tính năng trong video demo đều chạy thật trên nhánh này: dạy tuyến bằng điện thoại, AI soạn nháp có người duyệt, nhiều tuyến nối thành hành trình, cảnh báo nguy hiểm theo tuyến (cửa kính, cửa tự động), cảnh báo vật cản chạy trên điện thoại và thẻ "Wear your phone". Bảng đối chiếu video → tính năng và cách kiểm chứng: [docs/SUPER_FINAL.vi.md](docs/SUPER_FINAL.vi.md). `main` giữ luồng Check/Yes đã nộp ngày 23/09.
+> **Mọi tính năng trong video demo đều chạy thật trong app:** dạy tuyến bằng điện thoại, AI soạn nháp có người duyệt, nhiều tuyến nối thành hành trình, cảnh báo nguy hiểm theo tuyến (cửa kính, cửa tự động), cảnh báo vật cản chạy trên điện thoại và thẻ "Wear your phone". Bảng đối chiếu video → tính năng và cách kiểm chứng: [docs/SUPER_FINAL.vi.md](docs/SUPER_FINAL.vi.md). Luồng Check/Yes đã nộp ngày 23/09 được giữ ở commit `33b917c`.
 
 ## Vì sao có Day One
 

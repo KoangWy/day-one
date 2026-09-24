@@ -6,7 +6,7 @@ An indoor wayfinding prototype for visually impaired employees on their first da
 
 Instead of describing the world for the blind person, Day One fixes the route at the source: a colleague walks it once while narrating, a person reviews every word, and the employee walks it alone the next day — the camera finds each landmark, warns about doors and people ahead, and the employee decides when to move on.
 
-> **Branch `super-final-project`.** Everything the demo video showed is real on this branch: teaching from the phone, AI-drafted routes with human review, several routes that chain into a journey, route hazards (glass and automatic doors), on-phone obstacle alerts and the "Wear your phone" setup. See [docs/SUPER_FINAL.md](docs/SUPER_FINAL.md) for the video → feature map and how each part was verified. `main` keeps the Check/Yes flow that was submitted on 23/09.
+> **Everything the demo video showed is real in the app:** teaching from the phone, AI-drafted routes with human review, several routes that chain into a journey, route hazards (glass and automatic doors), on-phone obstacle alerts and the "Wear your phone" setup. See [docs/SUPER_FINAL.md](docs/SUPER_FINAL.md) for the video → feature map and how each part was verified. The Check/Yes flow submitted on 23/09 is kept at commit `33b917c`.
 
 ## Why Day One
 
