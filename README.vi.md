@@ -122,6 +122,8 @@ Kết quả đo và giới hạn: [kiểm chứng super final](docs/SUPER_FINAL.
 
 **Offixed** — 3 thành viên, ADC Hackathon 2026, RMIT Saigon South Campus (21–23/09/2026).
 
+**Giải Khuyến khích** (Consolation Prize) — ADC Hackathon 2026 (chủ đề AI & Employability, nhóm Visual Impairment), Đại học RMIT Việt Nam.
+
 ## Ghi nhận
 
 Ý tưởng teach-and-share tuyến lấy cảm hứng từ [OCCAM Lab Clew](https://github.com/occamLab/Clew); phần hiện thực là của Team Offixed. Không sao chép code Clew. Phát hiện vật cản dùng model MediaPipe EfficientDet-Lite0 của Google (Apache-2.0), tải về lúc build.

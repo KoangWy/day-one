@@ -122,6 +122,8 @@ Measured results and honest limits: [super final verification](docs/SUPER_FINAL.
 
 **Offixed** — 3 members, ADC Hackathon 2026, RMIT Saigon South Campus (21–23 Sep 2026).
 
+**Consolation Prize** — ADC Hackathon 2026 (AI & Employability, Visual Impairment track), RMIT University Vietnam.
+
 ## Acknowledgements
 
 Route teach-and-share inspired by [OCCAM Lab Clew](https://github.com/occamLab/Clew); original implementation by Team Offixed. No Clew code copied. Obstacle detection uses Google's MediaPipe EfficientDet-Lite0 model (Apache-2.0), downloaded at build time.
