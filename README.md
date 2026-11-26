@@ -126,6 +126,8 @@ Measured results and honest limits: [super final verification](docs/SUPER_FINAL.
 
 Route teach-and-share inspired by [OCCAM Lab Clew](https://github.com/occamLab/Clew); original implementation by Team Offixed. No Clew code copied. Obstacle detection uses Google's MediaPipe EfficientDet-Lite0 model (Apache-2.0), downloaded at build time.
 
+We are sincerely grateful to **Dr. Nguyen Duc Duy** (School of Industrial Management, Ho Chi Minh City University of Technology – HCMUT, VNU-HCM) for the guidance and support provided throughout the *E-Supply Chain* course. The course's framework for supply chain digital transformation — the digital maturity model and the principles of process redesign — together with Dr. Duy's detailed feedback on our work — framing problems with 5W2H, benchmarking against industry practice, and treating sensors, QR codes and other capture devices as inputs while keeping the focus on the core system — shaped how we approach technology: as a means of redesigning work around real users rather than an end in itself.
+
 ## License
 
 [MIT](LICENSE) © 2026 Team Offixed. Reuse it, adapt it for your own office or language — and please tell us what you build.

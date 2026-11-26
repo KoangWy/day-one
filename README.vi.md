@@ -126,6 +126,8 @@ Kết quả đo và giới hạn: [kiểm chứng super final](docs/SUPER_FINAL.
 
 Ý tưởng teach-and-share tuyến lấy cảm hứng từ [OCCAM Lab Clew](https://github.com/occamLab/Clew); phần hiện thực là của Team Offixed. Không sao chép code Clew. Phát hiện vật cản dùng model MediaPipe EfficientDet-Lite0 của Google (Apache-2.0), tải về lúc build.
 
+Nhóm xin trân trọng cảm ơn **TS. Nguyễn Đức Duy** (Khoa Quản lý Công nghiệp, Trường Đại học Bách khoa – ĐHQG-HCM) đã tận tình hướng dẫn và hỗ trợ nhóm trong suốt môn học *E-Supply Chain*. Khung lý thuyết về chuyển đổi số chuỗi cung ứng của môn học — mô hình mức độ trưởng thành số và các nguyên tắc thiết kế lại quy trình — cùng những góp ý chi tiết của Thầy cho bài làm của nhóm — xác định vấn đề bằng 5W2H, đối sánh với thực tiễn trong ngành, và coi cảm biến, mã QR hay các thiết bị thu thập dữ liệu chỉ là đầu vào để tập trung vào phần lõi của hệ thống — đã định hình cách nhóm tiếp cận công nghệ: là phương tiện để thiết kế lại công việc xoay quanh người dùng thật, chứ không phải mục đích tự thân.
+
 ## Giấy phép
 
 [MIT](LICENSE) © 2026 Team Offixed. Cứ dùng lại, chỉnh cho văn phòng hay ngôn ngữ của bạn — và kể cho nhóm nghe bạn làm được gì nhé.
